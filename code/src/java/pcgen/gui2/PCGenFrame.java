@@ -55,6 +55,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.WindowConstants;
 
+import javafx.scene.control.*;
 import pcgen.cdom.base.Constants;
 import pcgen.core.Campaign;
 import pcgen.core.GameMode;
@@ -73,6 +74,7 @@ import pcgen.facade.core.UIDelegate;
 import pcgen.facade.util.DefaultReferenceFacade;
 import pcgen.facade.util.ListFacade;
 import pcgen.facade.util.ReferenceFacade;
+import pcgen.facade.util.SortedListFacade;
 import pcgen.facade.util.event.ReferenceEvent;
 import pcgen.facade.util.event.ReferenceListener;
 import pcgen.gui2.dialog.ChooserDialog;
@@ -93,6 +95,7 @@ import pcgen.gui3.component.PCGenToolBar;
 import pcgen.gui3.dialog.AboutDialog;
 import pcgen.gui3.dialog.RememberingChoiceDialog;
 import pcgen.gui3.dialog.TipOfTheDayController;
+import pcgen.gui3.sources.SourceSelectionDialogPane;
 import pcgen.io.PCGFile;
 import pcgen.persistence.SourceFileLoader;
 import pcgen.system.CharacterManager;
@@ -103,16 +106,13 @@ import pcgen.system.Main;
 import pcgen.system.PCGenPropBundle;
 import pcgen.system.PCGenSettings;
 import pcgen.system.PropertyContext;
+import pcgen.util.Comparators;
 import pcgen.util.Logging;
 import pcgen.util.chooser.ChooserFactory;
 import pcgen.util.chooser.RandomChooser;
 
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.TextInputDialog;
-import javafx.scene.control.ToolBar;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
@@ -1310,6 +1310,23 @@ public final class PCGenFrame extends JFrame implements UIDelegate, CharacterSel
 	 */
 	public void showSourceSelectionDialog()
 	{
+		Platform.runLater(() -> {
+				// Load campaigns
+				ListFacade<SourceSelectionFacade> sources = new SortedListFacade<>(Comparators.toStringIgnoreCaseCollator(),
+						FacadeFactory.getDisplayedSourceSelections());
+				var gameModes = FacadeFactory.getGameModeDisplays();
+
+				var source = new SourceSelectionDialogPane(sources, gameModes);
+				var dialog = new Dialog<>();
+				dialog.setTitle("Select Sources");
+				dialog.setResizable(true);
+				dialog.setDialogPane(source);
+				var result = dialog.showAndWait();
+				System.out.println("Finished dialog");
+			}
+		);
+
+
 		if (sourceSelectionDialog == null)
 		{
 			sourceSelectionDialog = new SourceSelectionDialog(this, uiContext);
