@@ -1,24 +1,22 @@
 /*
  * Copyright 2008 Connor Petty <cpmeister@users.sourceforge.net>
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  */
 package pcgen.gui2;
-
-import static javax.swing.JOptionPane.CLOSED_OPTION;
 
 import java.awt.BorderLayout;
 import java.awt.GridBagConstraints;
@@ -38,7 +36,6 @@ import java.util.Observer;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.LogRecord;
-
 import javax.swing.Action;
 import javax.swing.ActionMap;
 import javax.swing.InputMap;
@@ -56,6 +53,7 @@ import javax.swing.SwingWorker;
 import javax.swing.WindowConstants;
 
 import javafx.scene.control.*;
+import org.apache.commons.lang3.StringUtils;
 import pcgen.cdom.base.Constants;
 import pcgen.core.Campaign;
 import pcgen.core.GameMode;
@@ -115,11 +113,12 @@ import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import org.apache.commons.lang3.StringUtils;
+
+import static javax.swing.JOptionPane.CLOSED_OPTION;
 
 /**
  * The main window for PCGen. In addition, this class is responsible for providing
- * global UI functions such as message dialogs. 
+ * global UI functions such as message dialogs.
  */
 public final class PCGenFrame extends JFrame implements UIDelegate, CharacterSelectionListener
 {
@@ -265,7 +264,7 @@ public final class PCGenFrame extends JFrame implements UIDelegate, CharacterSel
 		}
 
 		/**
-		 * If the preference to auto load sources at start is set, find the 
+		 * If the preference to auto load sources at start is set, find the
 		 * sources that were last loaded and load them now.
 		 * @return true if the sources have been loaded, false if not.
 		 * @throws InterruptedException If the load was interrupted.
@@ -322,7 +321,7 @@ public final class PCGenFrame extends JFrame implements UIDelegate, CharacterSel
 
 		private boolean maybeLoadCampaign() throws InterruptedException
 		{
-			String camp = Main.getStartupCampaign();
+			String camp = Main.getStartupCampaign().orElse(null);
 			if (camp != null)
 			{
 				SourceSelectionFacade selection = null;
@@ -360,15 +359,15 @@ public final class PCGenFrame extends JFrame implements UIDelegate, CharacterSel
 		 */
 		private boolean maybeLoadOrCreateCharacter() throws InterruptedException, InvocationTargetException
 		{
-			if (Main.getStartupCharacterFile() == null)
+			if (Main.getStartupCharacterFile().isEmpty())
 			{
 				return false;
 			}
-			final File file = new File(Main.getStartupCharacterFile());
+			final File file = Main.getStartupCharacterFile().get();
 			final DataSetFacade dataset = currentDataSetRef.get();
 			if (!file.exists() && dataset == null)
 			{
-				//TODO: complain about it
+				Logging.errorPrint("The provided file does not exist: '{0}'.", file);
 				return false;
 			}
 			if (Main.shouldStartInCharacterSheet())
@@ -462,7 +461,7 @@ public final class PCGenFrame extends JFrame implements UIDelegate, CharacterSel
 	}
 
 	/**
-	 * Unload any currently loaded sources. 
+	 * Unload any currently loaded sources.
 	 */
 	public void unloadSources()
 	{
@@ -596,8 +595,8 @@ public final class PCGenFrame extends JFrame implements UIDelegate, CharacterSel
 	}
 
 	/**
-	 * Prepare the character for a save. This is primarily concerned with 
-	 * ensuring all companions (or masters) have file names before the save is 
+	 * Prepare the character for a save. This is primarily concerned with
+	 * ensuring all companions (or masters) have file names before the save is
 	 * done.
 	 * @param character The character being saved.
 	 */
@@ -1260,7 +1259,7 @@ public final class PCGenFrame extends JFrame implements UIDelegate, CharacterSel
 		String sourceName = null;
 		if (currentCharacterRef != null && currentCharacterRef.get() != null)
 		{
-			// characterFileName The file name (without path) of the active character 
+			// characterFileName The file name (without path) of the active character
 			// sourceName The name of the source selection.
 
 			characterFile = currentCharacterRef.get().getFileRef().get();
@@ -1483,7 +1482,7 @@ public final class PCGenFrame extends JFrame implements UIDelegate, CharacterSel
 	@Override
 	public boolean showGeneralChooser(ChooserFacade chooserFacade)
 	{
-		// Check for an override of the chooser to be used 
+		// Check for an override of the chooser to be used
 		Optional<RandomChooser> choiceHandler = ChooserFactory.getChoiceHandler();
 		if (choiceHandler.isPresent())
 		{

@@ -797,17 +797,17 @@
 						<!-- Commenting this out (will need a test as well)
 			3.0 uses "Subdual", 3.5 uses "nonlethal".  We'll need a separate node for both.	-->
 			<#if (gamemodename = "3e")>
-			<#if (pcvar('VAR.Unarmed') > 0)>
-			<type>(subdual or normal)</type>
+				<#if (pcvar('VAR.Unarmed') > 0)>
+					<type>(subdual or normal)</type>
+				<#else>
+					<type>(subdual only)</type>
+				</#if>
 			<#else>
-			<type>(subdual only)</type>
-			</#if>
-			<#else>
-			<#if (pcvar('VAR.UnarmedLethal') > 0)>
-			<type>(lethal or nonlethal)</type>
-			<#else>
-			<type>(nonlethal only)</type>
-			</#if>
+				<#if (pcvar('VAR.UnarmedLethal') > 0)>
+					<type>(lethal or nonlethal)</type>
+				<#else>
+					<type>(nonlethal only)</type>
+				</#if>
 			</#if>
 		</unarmed>
 		</#if>
@@ -1560,7 +1560,7 @@
 	  ====================================
 	  ====================================-->
 	<archetypes>
-	<#if (pcvar('countdistinct("ABILITIES";"CATEGORY=Archetype";"VISIBILITY=DEFAULT[or]VISIBILITY=OUTPUT_ONLY";"TYPE=Archetype")') = 0)>
+	<#if (pcvar('countdistinct("ABILITIES";"CATEGORY=Archetype";"VISIBILITY=DEFAULT[or]VISIBILITY=OUTPUT_ONLY";"TYPE=Archetype")') = 0)> <!-- " -->
 	<#else>
 	<!-- Archetypes -->
 	</#if>
@@ -1581,7 +1581,7 @@
 	  ====================================
 			SPECIAL QUALITIES
 	  ====================================
-	  ====================================-->
+	  ==================================== -->
 	<special_qualities>
 	<@abilityBlock category="Special Ability" nature="ALL" hidden=false typeName="SpecialQuality" nodeName="special_quality" />
 	</special_qualities>
@@ -1868,6 +1868,16 @@
 	<pfs_boons>
 	<@abilityBlock category="Special Ability" nature="ALL" hidden=false typeName="PFSBoon" nodeName="pfs_boon" />
 	</pfs_boons>
+	<!--
+	  ====================================
+	  ====================================
+			Conditions
+	  ====================================
+	  ==================================== -->
+	<conditions>
+	<@abilityBlock category="Condition" nature="ALL" hidden=false typeName="Condition" nodeName="condition" />
+	</conditions>
+
 	<!--
 	====================================
 	  ====================================

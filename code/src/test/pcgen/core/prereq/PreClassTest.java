@@ -20,7 +20,6 @@ package pcgen.core.prereq;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import pcgen.AbstractCharacterTestCase;
 import pcgen.cdom.enumeration.ListKey;
@@ -41,7 +40,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Test class for PRECLASS token
- * 
+ *
  */
 public class PreClassTest extends AbstractCharacterTestCase
 {
@@ -82,10 +81,10 @@ public class PreClassTest extends AbstractCharacterTestCase
 		ranger.setName("Ranger");
 		pcClass.addToListFor(ListKey.SERVES_AS_CLASS, CDOMDirectSingleRef.getRef(warrior));
 		pcClass.addToListFor(ListKey.SERVES_AS_CLASS, CDOMDirectSingleRef.getRef(ranger));
-		
+
 		final PlayerCharacter character = getCharacter();
 		character.incrementClassLevel(3, pcClass);
-		
+
 		final Prerequisite prereq = new Prerequisite();
 		prereq.setKind("class");
 		prereq.setKey("Warrior");
@@ -508,21 +507,6 @@ public class PreClassTest extends AbstractCharacterTestCase
 			singlePrereq, character, null));
 	}
 
-	@Test
-	public void testOldPreClassLevelMax()
-	{
-		final PreClassLevelMaxParser parser = new PreClassLevelMaxParser();
-		try
-		{
-			parser.parse("CLASSLEVELMAX", "Fighter=2", false, false);
-		    fail();
-		}
-		catch (PersistenceLayerException e)
-		{
-		    // Do Nothing, we should catch an exception here
-		}
-	}
-
 	/**
 	 * Test to ensure that a character will fail a test
 	 * if it does not have the correct number of levels
@@ -665,7 +649,7 @@ public class PreClassTest extends AbstractCharacterTestCase
 		pcClass.setName("MyClass");
 		BuildUtilities.setFact(pcClass, "SpellType", "Arcane");
 		BonusObj aBonus = Bonus.newBonus(context, "CASTERLEVEL|MyClass|CL");
-		
+
 		if (aBonus != null)
 		{
 			pcClass.addToListFor(ListKey.BONUS, aBonus);
@@ -675,7 +659,7 @@ public class PreClassTest extends AbstractCharacterTestCase
 		pcClass2.setName("MyClass2");
 		BuildUtilities.setFact(pcClass2, "SpellType", "Divine");
 		aBonus = Bonus.newBonus(context, "CASTERLEVEL|MyClass2|CL");
-		
+
 		if (aBonus != null)
 		{
 			pcClass.addToListFor(ListKey.BONUS, aBonus);
@@ -702,7 +686,7 @@ public class PreClassTest extends AbstractCharacterTestCase
 		pcClass.setName("MyClass");
 		BuildUtilities.setFact(pcClass, "SpellType", "Arcane");
 		BonusObj aBonus = Bonus.newBonus(context, "CASTERLEVEL|MyClass|CL");
-		
+
 		if (aBonus != null)
 		{
 			pcClass.addToListFor(ListKey.BONUS, aBonus);
@@ -712,7 +696,7 @@ public class PreClassTest extends AbstractCharacterTestCase
 		pcClass2.setName("MyClass2");
 		BuildUtilities.setFact(pcClass2, "SpellType", "Arcane");
 		aBonus = Bonus.newBonus(context, "CASTERLEVEL|MyClass2|CL");
-		
+
 		if (aBonus != null)
 		{
 			pcClass.addToListFor(ListKey.BONUS, aBonus);
