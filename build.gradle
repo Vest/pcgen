@@ -49,7 +49,7 @@ javafx {
 }
 
 jacoco {
-    toolVersion '0.8.12'
+    toolVersion = '0.8.12'
 }
 
 // Set the groupId as it helps with Maven
@@ -758,12 +758,20 @@ tasks.named("jre") {
 tasks.withType(Test) {
     testLogging.showStandardStreams = false
 
-    jacoco.includeNoLocationClasses = true
-    jacoco.excludes = ['jdk.internal.*']
+
+    finalizedBy jacocoTestReport
+}
+
+tasks.named("jacocoTestReport", JacocoReport) {
+    dependsOn test
+
+    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
 
     reports {
-        html.required.set(true)
-        junitXml.required.set(true)
+        xml.setRequired true
+        xml.setOutputLocation layout.buildDirectory.file("reports/jacoco.xml")
+        csv.setRequired false
+        html.setOutputLocation layout.buildDirectory.dir("reports/jacocoHtml")
     }
 }
 
