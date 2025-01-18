@@ -775,6 +775,25 @@ tasks.named("jacocoTestReport", JacocoReport) {
     }
 }
 
+tasks.register("testCoverage", JacocoReport) {
+    dependsOn test
+    group = "Reporting"
+    description = "Generate Jacoco coverage reports for the test build."
+
+    reports {
+        html.required.set(true)
+        xml.required.set(true)
+    }
+
+    def javaClasses = fileTree(dir: layout.buildDirectory.dir("classes/java/main"))
+
+    sourceDirectories.from = files([
+            "$project.projectDir/src/main/java"
+    ])
+
+    executionData.from = files(layout.buildDirectory.file("jacoco/test.exec"))
+}
+
 tasks.named("test", Test) {
     exclude 'pcgen/testsupport/**'
     useJUnitPlatform()
