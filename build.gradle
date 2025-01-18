@@ -37,6 +37,7 @@ plugins {
     id 'com.dorongold.task-tree' version '4.0.0'        // Prints the task dependency tree
     id 'org.openjfx.javafxplugin' version '0.1.0'       // JavaFX support
     id 'org.beryx.runtime' version '1.13.1'             // Creates custom runtimes
+    id 'jacoco'                                         // Code coverage
 }
 
 /**
@@ -45,6 +46,10 @@ plugins {
 javafx {
     version = "21"
     modules = [ 'javafx.controls', 'javafx.web', 'javafx.swing', 'javafx.fxml', 'javafx.graphics' ]
+}
+
+jacoco {
+    toolVersion '0.8.12'
 }
 
 // Set the groupId as it helps with Maven
@@ -752,6 +757,14 @@ tasks.named("jre") {
 
 tasks.withType(Test) {
     testLogging.showStandardStreams = false
+
+    jacoco.includeNoLocationClasses = true
+    jacoco.excludes = ['jdk.internal.*']
+
+    reports {
+        html.required.set(true)
+        xml.required.set(true)
+    }
 }
 
 tasks.named("test", Test) {

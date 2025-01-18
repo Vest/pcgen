@@ -63,6 +63,17 @@ jobs:
             build/test-results/**/*.trx
             build/test-results/**/*.json
 
+      - name: Add coverage to PR
+        id: jacoco
+        uses: madrapps/jacoco-report@v1.7.1
+        with:
+          paths: |
+            ${{ github.workspace }}/**/build/jacoco/prodNormalDebugCoverage/prodNormalDebugCoverage.xml,
+            ${{ github.workspace }}/**/build/jacoco/**/debugCoverage.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 40
+          min-coverage-changed-files: 60
+
 #      - name: Upload build artifacts
 #        uses: actions/upload-artifact@v4
 #        with:
