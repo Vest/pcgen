@@ -37,6 +37,7 @@ plugins {
     id 'com.dorongold.task-tree' version '4.0.0'        // Prints the task dependency tree
     id 'org.openjfx.javafxplugin' version '0.1.0'       // JavaFX support
     id 'org.beryx.runtime' version '1.13.1'             // Creates custom runtimes
+    id 'jacoco'                                         // Code coverage
 }
 
 /**
@@ -45,6 +46,10 @@ plugins {
 javafx {
     version = "21"
     modules = [ 'javafx.controls', 'javafx.web', 'javafx.swing', 'javafx.fxml', 'javafx.graphics' ]
+}
+
+jacoco {
+    toolVersion = '0.8.12'
 }
 
 // Set the groupId as it helps with Maven
@@ -752,6 +757,41 @@ tasks.named("jre") {
 
 tasks.withType(Test) {
     testLogging.showStandardStreams = false
+
+
+    finalizedBy jacocoTestReport
+}
+
+tasks.named("jacocoTestReport", JacocoReport) {
+    dependsOn test
+
+    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
+
+    reports {
+        xml.setRequired true
+        xml.setOutputLocation layout.buildDirectory.file("reports/jacoco.xml")
+        csv.setRequired false
+        html.setOutputLocation layout.buildDirectory.dir("reports/jacocoHtml")
+    }
+}
+
+tasks.register("testCoverage", JacocoReport) {
+    dependsOn test
+    group = "Reporting"
+    description = "Generate Jacoco coverage reports for the test build."
+
+    reports {
+        html.required.set(true)
+        xml.required.set(true)
+    }
+
+    def javaClasses = fileTree(dir: layout.buildDirectory.dir("classes/java/main"))
+
+    sourceDirectories.from = files([
+            "$project.projectDir/src/main/java"
+    ])
+
+    executionData.from = files(layout.buildDirectory.file("jacoco/test.exec"))
 }
 
 tasks.named("test", Test) {

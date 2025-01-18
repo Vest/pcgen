@@ -5,7 +5,7 @@ name: Build PCGen with Gradle
 
 on:
   push:
-    branches: [ "gh_build" ] # use the current branch for testing purposes only
+    branches: [ "gh_build", "gh_build_draft" ] # use the current branch for testing purposes only
   pull_request:
     branches: [ "master" ]
 
@@ -62,6 +62,31 @@ jobs:
             build/test-results/**/*.xml
             build/test-results/**/*.trx
             build/test-results/**/*.json
+
+      - name: Run Coverage
+        run: ./gradlew testCoverage
+
+      - name: Upload Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: report.xml
+          path: ${{ github.workspace }}/build/reports/jacoco/testCoverage/testCoverage.xml
+
+      - name: Jacoco Report to PR
+        id: jacoco
+        uses: madrapps/jacoco-report@v1.7.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 40
+          min-coverage-changed-files: 60
+          debug-mode: false
+          paths: |
+            ${{ github.workspace }}/build/reports/jacoco/testCoverage/testCoverage.xml
+
+      - name: Get the Coverage info
+        run: |
+          echo "Total coverage ${{ steps.jacoco.outputs.coverage-overall }}"
+          echo "Changed Files coverage ${{ steps.jacoco.outputs.coverage-changed-files }}"
 
 #      - name: Upload build artifacts
 #        uses: actions/upload-artifact@v4
