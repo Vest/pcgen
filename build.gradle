@@ -755,26 +755,6 @@ tasks.named("jre") {
     dependsOn downloadJRE, downloadJavaFXModules
 }
 
-tasks.withType(Test) {
-    testLogging.showStandardStreams = false
-
-
-    finalizedBy jacocoTestReport
-}
-
-tasks.named("jacocoTestReport", JacocoReport) {
-    dependsOn test
-
-    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
-
-    reports {
-        xml.setRequired true
-        xml.setOutputLocation layout.buildDirectory.file("reports/jacoco.xml")
-        csv.setRequired false
-        html.setOutputLocation layout.buildDirectory.dir("reports/jacocoHtml")
-    }
-}
-
 tasks.register("testCoverage", JacocoReport) {
     dependsOn test
     group = "Reporting"

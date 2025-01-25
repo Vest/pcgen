@@ -52,7 +52,7 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Build with Gradle Wrapper
-        run: ./gradlew build test slowtest --debug --stacktrace
+        run: ./gradlew build test slowtest
 
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
