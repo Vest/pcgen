@@ -765,13 +765,13 @@ tasks.register("testCoverage", JacocoReport) {
         xml.required.set(true)
     }
 
-    def javaClasses = fileTree(dir: layout.buildDirectory.dir("classes/java/main"))
+    classDirectories.from = fileTree(dir: layout.buildDirectory.dir("classes/java/main"))
 
     sourceDirectories.from = files([
-            "$project.projectDir/src/main/java"
+            "$project.projectDir/code/src/java"
     ])
 
-    executionData.from = files(layout.buildDirectory.file("jacoco/test.exec"))
+    executionData.from = fileTree(dir: layout.buildDirectory.dir("jacoco")).include("*.exec")
 }
 
 tasks.named("test", Test) {
