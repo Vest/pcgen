@@ -48,10 +48,13 @@ jobs:
             build/jre
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-
+            ${{ runner.os }}-gradle
 
       - name: Build with Gradle Wrapper
-        run: ./gradlew build test
+        run: ./gradlew build
+
+      - name: Run tests
+        run: ./gradlew test slowtest
 
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -65,23 +68,21 @@ jobs:
       - name: Run Coverage
         run: ./gradlew testCoverage
 
-      - name: Upload Report
+      - name: Upload Report to artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: report.xml
-          path: ${{ github.workspace }}/build/reports/jacoco/testCoverage/testCoverage.xml
+          name: testCoverage
+          path: ${{ github.workspace }}/build/reports/jacoco/testCoverage/html
 
       - name: Jacoco Report to PR
         id: jacoco
         uses: madrapps/jacoco-report@v1.7.1
-        if: always()
         with:
           paths: |
-            ${{ github.workspace }}/**/build/reports/jacoco/**/testCoverage.xml
+            ${{ github.workspace }}/build/reports/jacoco/testCoverage/testCoverage.xml
           token: ${{ secrets.GITHUB_TOKEN }}
-          title: '## :construction: JaCoCo Code Coverage'
           update-comment: true
-          debug-mode: true
+          debug-mode: false
 
       - name: Get the Coverage info
         run: |
