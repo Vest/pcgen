@@ -75,6 +75,7 @@ jobs:
       - name: Jacoco Report to PR
         id: jacoco
         uses: madrapps/jacoco-report@v1.7.1
+        if: always()
         with:
           paths: |
             ${{ github.workspace }}/**/build/reports/jacoco/**/testCoverage.xml
