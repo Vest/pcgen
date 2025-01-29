@@ -81,6 +81,7 @@ jobs:
           paths: |
             ${{ github.workspace }}/build/reports/jacoco/testCoverage/testCoverage.xml
           token: ${{ secrets.GITHUB_TOKEN }}
+          title: '## :construction: PCGen Code Coverage'
           update-comment: true
           debug-mode: false
 
