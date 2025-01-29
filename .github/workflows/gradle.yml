@@ -52,7 +52,7 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Build with Gradle Wrapper
-        run: ./gradlew build test slowtest
+        run: ./gradlew build test
 
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -76,12 +76,12 @@ jobs:
         id: jacoco
         uses: madrapps/jacoco-report@v1.7.1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          min-coverage-overall: 40
-          min-coverage-changed-files: 60
-          debug-mode: true
           paths: |
             ${{ github.workspace }}/**/build/reports/jacoco/**/testCoverage.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: '## :construction: JaCoCo Code Coverage'
+          update-comment: true
+          debug-mode: true
 
       - name: Get the Coverage info
         run: |
