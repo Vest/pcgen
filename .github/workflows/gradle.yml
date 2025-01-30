@@ -44,7 +44,9 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: |
+            build/classes
             build/jre
+            build/libs
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle
