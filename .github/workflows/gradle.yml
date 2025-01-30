@@ -49,6 +49,7 @@ jobs:
             ${{ github.workspace }}/build/libs
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
+            ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
             ${{ runner.os }}-gradle
 
       - name: Build with Gradle Wrapper
