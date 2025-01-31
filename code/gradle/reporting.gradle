@@ -43,14 +43,6 @@ spotbugsMain {
     }
 }
 
-jacocoTestReport {
-    reports {
-        xml.required = false
-        csv.required = false
-        html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
-    }
-}
-
 tasks.register('allReports') {
     dependsOn checkstyleMain, pmdMain, spotbugsMain
 }
