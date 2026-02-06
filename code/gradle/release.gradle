@@ -124,6 +124,9 @@ ext {
 
 // Generate the publisher/data list for the Windows installer script
 tasks.register("genDataList") {
+
+    notCompatibleWithConfigurationCache("File manipulation involved in genDataList")
+
     inputs.dir layout.projectDirectory.dir("data")
 
     def dataNsh = layout.projectDirectory.file("installers/win-installer/includes/data.nsh")
@@ -295,6 +298,8 @@ tasks.register("assembleArtifacts", Copy) {
 
 // Produce SHA-256 checksums for each release artifact
 tasks.register("checksum") {
+    notCompatibleWithConfigurationCache("File manipulation involved in checksum")
+
     dependsOn assembleArtifacts
     doLast {
         def zipChecksumsFile = layout.buildDirectory
