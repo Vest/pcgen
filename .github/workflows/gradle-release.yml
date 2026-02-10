@@ -37,6 +37,7 @@ jobs:
             release_suffix: mac
           - os: windows-latest
             release_suffix: windows
+          # windows-arm removed - no GitHub-hosted runner available yet
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -76,31 +77,45 @@ jobs:
 
       - name: Build the image
         if: success()
-        run: ./gradlew jpackage
+        run: ./gradlew clean build copyToOutput test compileSlowtest datatest pfinttest allReports buildDist prepareRelease pcgenRelease
 
-      - name: Upload release assets for macos
+      - name: Upload zip based release assets for all platforms
         uses: actions/upload-artifact@v4
         if: matrix.os == 'macos-latest'
         with:
-          name: ${{ matrix.os }}
-          path: ${{ github.workspace }}/build/jpackage/*.dmg
+          name: ${{ matrix.os }}-zip
+          path: ${{ github.workspace }}/build/release/image-*.zip
 
-      - name: Upload release assets for ubuntu
+      - name: Upload DMG release asset for macos
         uses: actions/upload-artifact@v4
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'macos-latest'
         with:
-          name: ${{ matrix.os }}
-          path: ${{ github.workspace }}/build/jpackage/*.deb
+          name: ${{ matrix.os }}-dmg
+          path: ${{ github.workspace }}/build/release/*.dmg
 
-      - name: Upload release assets for windows
+      - name: Upload PKG release asset for macos
         uses: actions/upload-artifact@v4
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'macos-latest'
         with:
-          name: ${{ matrix.os }}
-          path: ${{ github.workspace }}/build/jpackage/*.msi
+          name: ${{ matrix.os }}-pkg
+          path: ${{ github.workspace }}/build/release/*.pkg
 
-      - name: Release - ${{ matrix.os }}
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.create_release.outputs.tag-name }}
-          files: ${{ github.workspace }}/build/jpackage/pcgen-*.*
+#      - name: Upload release assets for ubuntu
+#        uses: actions/upload-artifact@v4
+#        if: matrix.os == 'ubuntu-latest'
+#        with:
+#          name: ${{ matrix.os }}
+#          path: ${{ github.workspace }}/build/jpackage/*.deb
+#
+#      - name: Upload release assets for windows
+#        uses: actions/upload-artifact@v4
+#        if: matrix.os == 'windows-latest'
+#        with:
+#          name: ${{ matrix.os }}
+#          path: ${{ github.workspace }}/build/jpackage/*.msi
+#
+#      - name: Release - ${{ matrix.os }}
+#        uses: softprops/action-gh-release@v2
+#        with:
+#          tag_name: ${{ needs.create_release.outputs.tag-name }}
+#          files: ${{ github.workspace }}/build/release/pcgen-*.*
