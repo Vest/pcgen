@@ -97,7 +97,7 @@ public final class VariableChannel<T> extends AbstractReferenceFacade<T>
 		T value = varStore.get(varID);
 		if (value == null)
 		{
-			return manager.getDefaultValue(varID.getFormatManager());
+			return manager.getDefault(varID.getFormatManager());
 		}
 		return value;
 	}
@@ -108,7 +108,7 @@ public final class VariableChannel<T> extends AbstractReferenceFacade<T>
 		if (!checkForVeto(object))
 		{
 			varStore.put(varID, object);
-			manager.solveChildren(varID);
+			manager.processSolver(varID);
 		}
 	}
 
