@@ -218,7 +218,6 @@ dependencies {
 
     implementation fileTree(dir: 'mods/lib', include: ['javafx.*.jar'])
 
-    implementation 'commons-io:commons-io:2.22.0'
     implementation 'org.springframework:spring-web:7.0.7'
     implementation 'org.springframework:spring-beans:7.0.7'
     implementation 'org.springframework:spring-core:7.0.7'
@@ -291,7 +290,7 @@ jar {
 jlink {
     options = ['--strip-debug', '--no-header-files', '--no-man-pages']
     forceMerge('jep', 'fop', 'Saxon-HE',
-               'commons-lang3', 'commons-io', 'commons-collections4', 'spring',
+               'commons-lang3', 'commons-collections4', 'spring',
                'freemarker', 'jdom2', 'argparse4j', 'xmlunit', 'controlsfx',
                'annotations', 'spotbugs', 'xmlresolver')
 
