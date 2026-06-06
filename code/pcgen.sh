@@ -64,7 +64,47 @@ if [ $available_memory -eq $available_memory ]; then
 fi
 
 # To load all sources takes more than the default 64MB.
-javaargs="-Xms${default_min_memory}m -Xmx${default_max_memory}m -Dsun.java2d.dpiaware=false"
+javaargs="-Xms${default_min_memory}m -Xmx${default_max_memory}m"
+
+# HiDPI handling (issue #6749).
+# JDK Swing on X11 doesn't pick up the desktop's DPI/scale automatically, so the
+# UI looks tiny on high-DPI monitors. Enable Java's built-in UI scaling and, if
+# the user hasn't already chosen a scale via GDK_SCALE / GTK_SCALE / sun.java2d.uiScale,
+# infer one from xrandr's reported DPI.
+javaargs="$javaargs -Dsun.java2d.uiScale.enabled=true"
+
+case " $javaargs $JAVA_TOOL_OPTIONS " in
+    *" -Dsun.java2d.uiScale="*|*" -Dsun.java2d.uiScale.x="*|*" -Dsun.java2d.uiScale.y="*) ;;
+    *)
+        if [ -z "$GDK_SCALE" ] && [ -z "$GTK_SCALE" ] && command -v xrandr >/dev/null 2>&1; then
+            # First connected output's DPI: xrandr reports physical size in mm
+            # alongside the active mode resolution.
+            dpi=$(xrandr 2>/dev/null | awk '
+                /[[:space:]]connected/ {
+                    width_px = 0; width_mm = 0
+                    for (i = 1; i <= NF; i++) {
+                        if ($i ~ /^[0-9]+x[0-9]+\+/) {
+                            split($i, r, /[x+]/); width_px = r[1]
+                        }
+                        if (width_mm == 0 && $i ~ /^[0-9]+mm$/) {
+                            n = $i; sub(/mm$/, "", n); width_mm = n + 0
+                        }
+                    }
+                    if (width_px > 0 && width_mm > 0) {
+                        printf "%d\n", width_px * 25.4 / width_mm
+                        exit
+                    }
+                }')
+            if [ -n "$dpi" ] && [ "$dpi" -ge 168 ] 2>/dev/null; then
+                # 96 DPI is the X11 baseline; round to the nearest integer scale.
+                scale=$(( (dpi + 48) / 96 ))
+                [ "$scale" -lt 2 ] && scale=2
+                javaargs="$javaargs -Dsun.java2d.uiScale=$scale"
+                echo "Detected ~${dpi} DPI display; setting -Dsun.java2d.uiScale=$scale"
+            fi
+        fi
+        ;;
+esac
 
 while [ "x$1" != x ]
 do

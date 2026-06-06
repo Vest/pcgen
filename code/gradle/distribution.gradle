@@ -68,7 +68,14 @@ ext {
 application {
     // Output the startScripts (.bat and .sh) in main distribute folder rather than .bin
     executableDir = ""
-    applicationDefaultJvmArgs = ["-Dsun.java2d.d3d=false"]
+    applicationDefaultJvmArgs = [
+            "-Dsun.java2d.d3d=false",
+            // Issue #6749: opt Swing into HiDPI scaling on Linux X11. Already
+            // the default on Windows and Wayland, but required so packaged
+            // launchers (installDist scripts and jpackage native launchers)
+            // honor the desktop's DPI on X11 sessions.
+            "-Dsun.java2d.uiScale.enabled=true",
+    ]
 
     applicationDistribution.with(dataDistsImage)
     applicationDistribution.with(docsDistsImage)
