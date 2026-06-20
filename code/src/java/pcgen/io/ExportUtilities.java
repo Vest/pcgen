@@ -29,8 +29,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import freemarker.template.Configuration;
 import pcgen.cdom.base.Constants;
 import pcgen.core.SettingsHandler;
 import pcgen.facade.core.CharacterFacade;
@@ -42,14 +44,12 @@ import freemarker.template.DefaultObjectWrapperBuilder;
 import freemarker.template.ObjectWrapper;
 import freemarker.template.Version;
 import javafx.stage.FileChooser;
-import org.apache.commons.io.filefilter.FileFilterUtils;
-import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 
 /**
  * ExportUtilities is a collection of useful tools for exporting characters.
- * 
+ *
  */
 public final class ExportUtilities
 {
@@ -57,14 +57,14 @@ public final class ExportUtilities
 	public static final String HTML_EXPORT_DIR_PROP = "htmlExportDir";
 
 	/**
-	 * This class should not be constructed. 
+	 * This class should not be constructed.
 	 */
 	private ExportUtilities()
 	{
 	}
 
 	/**
-	 * Retrieve the extension that should be used for the output file. This is base don the template name.  
+	 * Retrieve the extension that should be used for the output file. This is base don the template name.
 	 * @param templateFilename The filename of the export template.
 	 * @param isPdf Is this an export to a PDF file?
 	 * @return The output filename extension.
@@ -112,12 +112,12 @@ public final class ExportUtilities
 	}
 
 	/**
-	 * Returns an ObjectWrapper of sufficiently high version for pcgen
+	 * Returns an ObjectWrapper out of the latest version of Freemarker for pcgen
 	 */
 	public static ObjectWrapper getObjectWrapper()
 	{
 		DefaultObjectWrapperBuilder defaultObjectWrapperBuilder = new DefaultObjectWrapperBuilder(
-				new Version("2.3.28"));
+				new Version(Configuration.getVersion().toString()));
 		return defaultObjectWrapperBuilder.build();
 	}
 
@@ -139,10 +139,8 @@ public final class ExportUtilities
 
 	public static URI[] getValidFiles(Collection<File> myAllTemplates, SheetFilter sheetFilter, boolean doPartyExport)
 	{
-		IOFileFilter prefixFilter;
 		String outputSheetsDir;
 		String outputSheetDirectory = SettingsHandler.getGameAsProperty().get().getOutputSheetDirectory();
-		IOFileFilter ioFilter = FileFilterUtils.asFileFilter(sheetFilter);
 		if (outputSheetDirectory == null)
 		{
 			outputSheetsDir = ConfigurationSettings.getOutputSheetsDir() + '/' + sheetFilter.getPath();
@@ -153,17 +151,14 @@ public final class ExportUtilities
 					+ sheetFilter.getPath();
 		}
 
-		if (doPartyExport)
-		{
-			prefixFilter = FileFilterUtils.prefixFileFilter(Constants.PARTY_TEMPLATE_PREFIX);
-		} else
-		{
-			prefixFilter = FileFilterUtils.prefixFileFilter(Constants.CHARACTER_TEMPLATE_PREFIX);
-		}
-		IOFileFilter filter = FileFilterUtils.and(prefixFilter, ioFilter);
+		String prefix = doPartyExport ? Constants.PARTY_TEMPLATE_PREFIX : Constants.CHARACTER_TEMPLATE_PREFIX;
+		Predicate<File> filter = f -> f.getName().startsWith(prefix)
+				&& sheetFilter.accept(f.getParentFile(), f.getName());
 
-		List<File> files = FileFilterUtils.filterList(filter, myAllTemplates);
-		Collections.sort(files);
+		List<File> files = myAllTemplates.stream()
+		                                 .filter(filter)
+		                                 .sorted()
+		                                 .collect(Collectors.toList());
 		URI osPath = new File(outputSheetsDir).toURI();
 		URI[] uriList = new URI[files.size()];
 		Arrays.setAll(uriList, i -> osPath.relativize(files.get(i).toURI()));

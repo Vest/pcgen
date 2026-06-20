@@ -24,8 +24,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import pcgen.base.formula.Formula;
-import pcgen.base.util.NamedFormula;
+import pcgen.cdom.formula.Formula;
+import pcgen.util.NamedFormula;
 import pcgen.cdom.base.CDOMReference;
 import pcgen.cdom.base.Constants;
 import pcgen.cdom.helper.EqModRef;

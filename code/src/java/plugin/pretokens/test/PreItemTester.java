@@ -27,18 +27,16 @@ import pcgen.core.display.CharacterDisplay;
 import pcgen.core.prereq.AbstractDisplayPrereqTest;
 import pcgen.core.prereq.Prerequisite;
 import pcgen.core.prereq.PrerequisiteException;
-import pcgen.core.prereq.PrerequisiteTest;
 import pcgen.core.utils.CoreUtility;
 import pcgen.system.LanguageBundle;
 
 /**
  * Sets requirements for items a character must possess.
  */
-public class PreItemTester extends AbstractDisplayPrereqTest implements PrerequisiteTest
+public class PreItemTester extends AbstractDisplayPrereqTest
 {
 
 	// TODO Refactor this with all the equipment tests.
-	@SuppressWarnings("PMD.OneDeclarationPerLine")
 	@Override
 	public int passes(final Prerequisite prereq, final CharacterDisplay display, CDOMObject source)
 		throws PrerequisiteException

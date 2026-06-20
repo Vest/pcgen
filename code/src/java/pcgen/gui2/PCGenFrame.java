@@ -88,7 +88,7 @@ import pcgen.gui2.tools.TipOfTheDayHandler;
 import pcgen.gui2.util.ShowMessageGuiObserver;
 import pcgen.gui3.GuiAssertions;
 import pcgen.gui3.GuiUtility;
-import pcgen.gui3.JFXPanelFromResource;
+import pcgen.gui3.PanelFromResource;
 import pcgen.gui3.component.PCGenToolBar;
 import pcgen.gui3.dialog.AboutDialog;
 import pcgen.gui3.dialog.RememberingChoiceDialog;
@@ -244,12 +244,11 @@ public final class PCGenFrame extends JFrame implements UIDelegate, CharacterSel
 				if (!alternateStartup)
 				{
 					//Do a default startup
+					if (TipOfTheDayHandler.shouldShowTipOfTheDay())
+					{
+						Platform.runLater(PCGenFrame::showTipsOfTheDay);
+					}
 					SwingUtilities.invokeLater(() -> {
-						if (TipOfTheDayHandler.shouldShowTipOfTheDay())
-						{
-							showTipsOfTheDay();
-						}
-
 						if (!SourceSelectionDialog.skipSourceSelection())
 						{
 							showSourceSelectionDialog();
@@ -1297,7 +1296,7 @@ public final class PCGenFrame extends JFrame implements UIDelegate, CharacterSel
 	 */
 	static void showTipsOfTheDay()
 	{
-		var totd = new JFXPanelFromResource<>(
+		var totd = new PanelFromResource<>(
 				TipOfTheDayController.class,
 				"TipOfTheDay.fxml"
 		);
@@ -1517,7 +1516,7 @@ public final class PCGenFrame extends JFrame implements UIDelegate, CharacterSel
 		private final SourceFileLoader loader;
 		private final SwingWorker<List<LogRecord>, List<LogRecord>> worker;
 
-		public SourceLoadWorker(SourceSelectionFacade sources, UIDelegate delegate)
+		SourceLoadWorker(SourceSelectionFacade sources, UIDelegate delegate)
 		{
 			this.sources = sources;
 			loader = new SourceFileLoader(delegate, sources.getCampaigns(), sources.getGameMode().get().getName());
@@ -1578,6 +1577,7 @@ public final class PCGenFrame extends JFrame implements UIDelegate, CharacterSel
 			updateTitle();
 		}
 
+		// TODO there are no examples with licenses. Either remove this or add a test.
 		private void showLicenses()
 		{
 			PropertyContext context = PCGenSettings.OPTIONS_CONTEXT;
@@ -1594,11 +1594,8 @@ public final class PCGenFrame extends JFrame implements UIDelegate, CharacterSel
 					{
 						showLicenseDialog(LanguageBundle.getString("in_specialLicenses"), licenses); //$NON-NLS-1$
 					}
-					for (String license : loader.getOtherLicenses())
-					{
-						showLicenseDialog(LanguageBundle.getString("in_specialLicenses"), license); //$NON-NLS-1$
-					}
-
+					loader.getOtherLicenses()
+							.forEach(license -> showLicenseDialog(LanguageBundle.getString("in_specialLicenses"), license)); //$NON-NLS-1$
 				}
 			}
 			if (loader.hasMatureCampaign() && context.initBoolean(PCGenSettings.OPTION_SHOW_MATURE_ON_LOAD, true))

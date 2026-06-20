@@ -20,10 +20,9 @@ import pcgen.core.display.CharacterDisplay;
 import pcgen.core.prereq.AbstractDisplayPrereqTest;
 import pcgen.core.prereq.Prerequisite;
 import pcgen.core.prereq.PrerequisiteException;
-import pcgen.core.prereq.PrerequisiteTest;
 import pcgen.system.LanguageBundle;
 
-public class PreAgeSetTester extends AbstractDisplayPrereqTest implements PrerequisiteTest
+public class PreAgeSetTester extends AbstractDisplayPrereqTest
 {
 
 	@Override
@@ -42,12 +41,6 @@ public class PreAgeSetTester extends AbstractDisplayPrereqTest implements Prereq
 		catch (NumberFormatException exc)
 		{
 			anInt = display.getBioSet().getAgeSetNamed(prereq.getKey());
-		}
-		catch (Exception e)
-		{
-			throw new PrerequisiteException(
-				LanguageBundle.getFormattedString(
-					"PreAgeSet.error.badly_formed_attribute", prereq.getOperand()), e); //$NON-NLS-1$
 		}
 
 		if (anInt == -1)

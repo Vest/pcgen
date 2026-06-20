@@ -1,0 +1,153 @@
+/*
+ * Copyright 2006 (C) James Dempsey <jdempsey@users.sourceforge.net>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.     See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ */
+package pcgen.io.exporttoken;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import pcgen.AbstractCharacterTestCase;
+import pcgen.cdom.enumeration.PCStringKey;
+import pcgen.cdom.util.CControl;
+import pcgen.core.PlayerCharacter;
+import pcgen.io.ExportHandler;
+import pcgen.output.channel.ChannelUtilities;
+
+import plugin.exporttokens.TextToken;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+/**
+ * {@code TextTokenTest} tests the functioning of the TEXT
+ * token processing code. 
+ */
+public class TextTokenTest extends AbstractCharacterTestCase
+{
+	@BeforeEach
+    @Override
+	protected void setUp() throws Exception
+	{
+		super.setUp();
+		PlayerCharacter character = getCharacter();
+		character.setName("The Vitamins are in my Fresh Brussels Sprouts");
+		character.setPCAttribute(PCStringKey.INTERESTS, "one potatoe. two potatoe. mORe");
+	}
+
+	/**
+	 * Test the output for positive numbers with fractions.
+	 */
+	@Test
+	public void testTextFormatting()
+	{
+		TextToken tok = new TextToken();
+		ExportHandler eh = ExportHandler.createExportHandler(null);
+		PlayerCharacter character = getCharacter();
+
+		assertEquals("the vitamins are in my fresh brussels sprouts", tok.getToken(
+				"TEXT.LOWER.NAME", character, eh), "TEXT.LOWER.NAME");
+		assertEquals("THE VITAMINS ARE IN MY FRESH BRUSSELS SPROUTS", tok.getToken(
+				"TEXT.UPPER.NAME", character, eh), "TEXT.UPPER.NAME");
+		assertEquals("The vitamins are in my fresh brussels sprouts", tok.getToken(
+				"TEXT.SENTENCE.NAME", character, eh), "TEXT.SENTENCE.NAME");
+		assertEquals("The vitamins are in my fresh brussels sprouts", tok.getToken(
+				"TEXT.SENTENCE.NAME", character, eh), "TEXT.SENTENCE.NAME");
+		character.setPCAttribute(PCStringKey.NAME, "The Vitamins are in my Fresh Brussels Sprouts");
+		assertEquals("One potatoe. Two potatoe. More", tok.getToken(
+				"TEXT.SENTENCE.INTERESTS", character, eh), "TEXT.SENTENCE.INTERESTS");
+		assertEquals("The Vitamins Are In My Fresh Brussels Sprouts", tok.getToken(
+				"TEXT.TITLE.NAME", getCharacter(), eh), "TEXT.TITLE.NAME");
+		assertEquals("One Potatoe. Two Potatoe. More", tok
+			.getToken("TEXT.TITLE.INTERESTS", character, eh), "TEXT.TITLE.NAME");
+	}
+
+	/**
+	 * Test the output for negative numbers with fractions.
+	 */
+	@Test
+	public void testNumSuffix()
+	{
+		TextToken tok = new TextToken();
+		ExportHandler eh = ExportHandler.createExportHandler(null);
+		PlayerCharacter character = getCharacter();
+
+		ChannelUtilities.setControlledChannel(character.getCharID(), CControl.AGEINPUT, 1);
+		assertEquals("st", tok.getToken("TEXT.NUMSUFFIX.AGE",
+			getCharacter(), eh), "Suffix 1");
+		ChannelUtilities.setControlledChannel(character.getCharID(), CControl.AGEINPUT, 2);
+		assertEquals("nd", tok.getToken("TEXT.NUMSUFFIX.AGE",
+			getCharacter(), eh), "Suffix 2");
+		ChannelUtilities.setControlledChannel(character.getCharID(), CControl.AGEINPUT, 3);
+		assertEquals("rd", tok.getToken("TEXT.NUMSUFFIX.AGE",
+			getCharacter(), eh), "Suffix 3");
+		ChannelUtilities.setControlledChannel(character.getCharID(), CControl.AGEINPUT, 4);
+		assertEquals("th", tok.getToken("TEXT.NUMSUFFIX.AGE",
+			getCharacter(), eh), "Suffix 4");
+		ChannelUtilities.setControlledChannel(character.getCharID(), CControl.AGEINPUT, 11);
+		assertEquals("th", tok.getToken("TEXT.NUMSUFFIX.AGE",
+			getCharacter(), eh), "Suffix 11");
+		ChannelUtilities.setControlledChannel(character.getCharID(), CControl.AGEINPUT, 12);
+		assertEquals("th", tok.getToken("TEXT.NUMSUFFIX.AGE",
+			getCharacter(), eh), "Suffix 12");
+		ChannelUtilities.setControlledChannel(character.getCharID(), CControl.AGEINPUT, 13);
+		assertEquals("th", tok.getToken("TEXT.NUMSUFFIX.AGE",
+			getCharacter(), eh), "Suffix 13");
+		ChannelUtilities.setControlledChannel(character.getCharID(), CControl.AGEINPUT, 14);
+		assertEquals("th", tok.getToken("TEXT.NUMSUFFIX.AGE",
+			getCharacter(), eh), "Suffix 14");
+		ChannelUtilities.setControlledChannel(character.getCharID(), CControl.AGEINPUT, 21);
+		assertEquals("st", tok.getToken("TEXT.NUMSUFFIX.AGE",
+			getCharacter(), eh), "Suffix 21");
+		ChannelUtilities.setControlledChannel(character.getCharID(), CControl.AGEINPUT, 22);
+		assertEquals("nd", tok.getToken("TEXT.NUMSUFFIX.AGE",
+			getCharacter(), eh), "Suffix 22");
+		ChannelUtilities.setControlledChannel(character.getCharID(), CControl.AGEINPUT, 23);
+		assertEquals("rd", tok.getToken("TEXT.NUMSUFFIX.AGE",
+			getCharacter(), eh), "Suffix 23");
+		ChannelUtilities.setControlledChannel(character.getCharID(), CControl.AGEINPUT, 24);
+		assertEquals("th", tok.getToken("TEXT.NUMSUFFIX.AGE",
+			getCharacter(), eh), "Suffix 24");
+		ChannelUtilities.setControlledChannel(character.getCharID(), CControl.AGEINPUT, 133);
+		assertEquals("rd", tok.getToken("TEXT.NUMSUFFIX.AGE",
+			getCharacter(), eh), "Suffix 133");
+	}
+
+	/**
+	 * Test the output for negative numbers with fractions.
+	 */
+	@Test
+	public void testNumSuffixDirect()
+	{
+		TextToken tok = new TextToken();
+		ExportHandler eh = ExportHandler.createExportHandler(null);
+
+		assertEquals("st", tok.getToken("TEXT.NUMSUFFIX.1",
+			getCharacter(), eh), "Suffix 1");
+		assertEquals("nd", tok.getToken("TEXT.NUMSUFFIX.2",
+			getCharacter(), eh), "Suffix 2");
+		assertEquals("rd", tok.getToken("TEXT.NUMSUFFIX.3",
+			getCharacter(), eh), "Suffix 3");
+		assertEquals("th", tok.getToken("TEXT.NUMSUFFIX.4",
+			getCharacter(), eh), "Suffix 4");
+		assertEquals("th", tok.getToken("TEXT.NUMSUFFIX.12",
+			getCharacter(), eh), "Suffix 12");
+		assertEquals("rd", tok.getToken("TEXT.NUMSUFFIX.133",
+			getCharacter(), eh), "Suffix 133");
+		assertEquals("rd", tok.getToken("TEXT.NUMSUFFIX.133.0",
+			getCharacter(), eh), "Suffix 133");
+	}
+
+}

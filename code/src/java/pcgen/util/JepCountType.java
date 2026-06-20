@@ -253,10 +253,8 @@ public abstract class JepCountType
 					break;
 				case WDC:
 					break;
-				default:
-					//Case not caught, should this cause an error?
-					break;
-			}
+                // All enum cases are covered so no default
+            }
 			return cs;
 		}
 	};
@@ -349,7 +347,7 @@ public abstract class JepCountType
 	{
 		String type;
 
-		public TypeFilter(String typ)
+		TypeFilter(String typ)
 		{
 			type = typ;
 		}
@@ -366,7 +364,7 @@ public abstract class JepCountType
 	{
 		String type;
 
-		public TypeExclusionFilter(String typ)
+		TypeExclusionFilter(String typ)
 		{
 			type = typ;
 		}
@@ -392,7 +390,7 @@ public abstract class JepCountType
 	{
 		Nature nature;
 
-		public NatureFilter(Nature n)
+		NatureFilter(Nature n)
 		{
 			nature = n;
 		}
@@ -701,9 +699,7 @@ public abstract class JepCountType
 					filter = new AspectFilter(keyValue);
 					break;
 
-				default:
-					//Case not caught, should this cause an error?
-					break;
+                // All enum cases are covered so no default
 			}
 
 			List<CNAbility> ret = new ArrayList<>(coll);

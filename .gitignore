@@ -5,6 +5,8 @@
 .settings/
 /settings/
 
+testsuite/
+
 # Batch converter
 batch-convert.jar
 
@@ -94,6 +96,7 @@ code/build.eclipse/
 
 # IntelliJ IDE
 .idea/
+.run/
 out/
 pcgendev.iml
 pcgen.iml
@@ -112,6 +115,9 @@ pcgen.iws
 
 # Misc
 jre/
+jdks/
 mods/
 code/manifest-tests
 .DS_Store
+
+.superset/

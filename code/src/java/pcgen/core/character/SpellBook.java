@@ -17,7 +17,7 @@
  */
 package pcgen.core.character;
 
-import pcgen.base.formula.Formula;
+import pcgen.cdom.formula.Formula;
 import pcgen.cdom.base.Constants;
 import pcgen.cdom.enumeration.FormulaKey;
 import pcgen.cdom.enumeration.IntegerKey;
@@ -190,7 +190,7 @@ public class SpellBook implements Cloneable
 	 */
 	public final String getTypeName()
 	{
-		String retValue = switch (getType())
+		return switch (getType())
 				{
 					case SpellBook.TYPE_KNOWN_SPELLS -> "Known Spell List";
 					case SpellBook.TYPE_PREPARED_LIST -> "Prepared Spell List";
@@ -198,7 +198,6 @@ public class SpellBook implements Cloneable
 					case SpellBook.TYPE_INNATE_SPELLS -> "Innate Spell List";
 					default -> "Unknown spell list type: " + getType();
 				};
-		return retValue;
 	}
 
 	/**

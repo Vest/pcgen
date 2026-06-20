@@ -18,7 +18,6 @@
  */
 package pcgen.system;
 
-import java.awt.Component;
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.GraphicsEnvironment;
@@ -41,8 +40,8 @@ import pcgen.facade.core.UIDelegate;
 import pcgen.gui2.PCGenUIManager;
 import pcgen.gui2.UIPropertyContext;
 import pcgen.gui2.converter.TokenConverter;
-import pcgen.gui2.dialog.RandomNameDialog;
-import pcgen.gui3.JFXPanelFromResource;
+import pcgen.gui3.PanelFromResource;
+import pcgen.gui3.namegen.RandomNameDialog;
 import pcgen.gui3.dialog.OptionsPathDialogController;
 import pcgen.gui3.preloader.PCGenPreloader;
 import pcgen.io.ExportHandler;
@@ -57,6 +56,7 @@ import pcgen.rules.persistence.TokenLibrary;
 import pcgen.system.application.DeadlockDetectorTask;
 import pcgen.system.application.LoggingUncaughtExceptionHandler;
 import pcgen.system.application.PCGenLoggingDeadlockHandler;
+import pcgen.util.GracefulExit;
 import pcgen.util.Logging;
 import pcgen.util.PJEP;
 
@@ -126,9 +126,9 @@ public final class Main
 
 		if (commandLineArguments.isStartNameGenerator())
 		{
-			Component dialog = new RandomNameDialog(null, null);
-			dialog.setVisible(true);
-			System.exit(0);
+			RandomNameDialog dialog = new RandomNameDialog(null);
+			dialog.showAndBlock();
+			GracefulExit.exit(0);
 		}
 
 		if (commandLineArguments.getExportSheet().isEmpty())
@@ -188,12 +188,7 @@ public final class Main
 		new JFXPanel();
 
 		PCGenPreloader splash = new PCGenPreloader();
-		PCGenTaskExecutor executor = new PCGenTaskExecutor();
-		executor.addPCGenTask(createLoadPluginTask());
-		executor.addPCGenTask(new GameModeFileLoader());
-		executor.addPCGenTask(new CampaignFileLoader());
-		executor.addPCGenTaskListener(splash);
-		executor.run();
+		runBootstrapTasks(splash);
 		splash.getController().setProgress(LanguageBundle.getString("in_taskInitUi"), 1.0d);
 		FacadeFactory.initialize();
 		PCGenUIManager.initializeGUI();
@@ -249,7 +244,7 @@ public final class Main
 				JOptionPane.showMessageDialog(null, message + "\nPlease reinstall PCGen.", Constants.APPLICATION_NAME,
 					JOptionPane.ERROR_MESSAGE);
 			}
-			System.exit(1);
+			GracefulExit.exit(1);
 		}
 	}
 
@@ -261,9 +256,9 @@ public final class Main
 			if (!useGui)
 			{
 				Logging.errorPrint("No settingsDir specified via -s in batch mode and no default exists.");
-				System.exit(1);
+				GracefulExit.exit(1);
 			}
-			var panel = new JFXPanelFromResource<>(
+			var panel = new PanelFromResource<>(
 					OptionsPathDialogController.class,
 					"OptionsPathDialog.fxml"
 			);
@@ -283,15 +278,12 @@ public final class Main
 		File savepath_dir = new File(savepath);
 		if (!savepath_dir.exists() && !savepath_dir.isDirectory())
 		{
-			try
-			{
-				Logging.log(Level.INFO, "Making directory " + savepath_dir);
-				savepath_dir.mkdir();
-			}
-			catch (Exception e)
-			{
-				Logging.log(Level.SEVERE, "Unable to create PCG_SAVE_PATH " + savepath_dir + ": " + e );
-			}
+            Logging.log(Level.INFO, "Making directory " + savepath_dir);
+            boolean succeeded = savepath_dir.mkdir();
+            if (!succeeded)
+            {
+                Logging.log(Level.SEVERE, "Unable to create PCG_SAVE_PATH " + savepath_dir);
+            }
 		}
 	}
 
@@ -324,16 +316,32 @@ public final class Main
 		return loader;
 	}
 
+	/**
+	 * Run the canonical post-properties bootstrap sequence: load plugins,
+	 * then game modes, then campaigns. Order matters — plugins register
+	 * tokens that GameModeFileLoader relies on, and game modes must exist
+	 * before campaigns reference them. {@link #loadProperties} must already
+	 * have run; that's why it's the caller's responsibility, not ours.
+	 */
+	public static void runBootstrapTasks(PCGenTaskListener... listeners)
+	{
+		PCGenTaskExecutor executor = new PCGenTaskExecutor();
+		executor.addPCGenTask(createLoadPluginTask());
+		executor.addPCGenTask(new GameModeFileLoader());
+		executor.addPCGenTask(new CampaignFileLoader());
+		for (PCGenTaskListener listener : listeners)
+		{
+			executor.addPCGenTaskListener(listener);
+		}
+		executor.run();
+	}
+
 	private static boolean startupWithoutGUI()
 	{
 		loadProperties(false);
 		validateEnvironment(false);
 
-		PCGenTaskExecutor executor = new PCGenTaskExecutor();
-		executor.addPCGenTask(createLoadPluginTask());
-		executor.addPCGenTask(new GameModeFileLoader());
-		executor.addPCGenTask(new CampaignFileLoader());
-		executor.run();
+		runBootstrapTasks();
 
 		UIDelegate uiDelegate = new ConsoleUIDelegate();
 
@@ -367,7 +375,7 @@ public final class Main
 			CustomData.writeCustomItems();
 		}
 
-		System.exit(success ? 0 : 1);
+		GracefulExit.exit(success ? 0 : 1);
 	}
 
 	private static void initPrintPreviewFonts()

@@ -26,7 +26,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
 
-import pcgen.base.formula.Formula;
+import pcgen.cdom.formula.Formula;
 import pcgen.base.lang.UnreachableError;
 import pcgen.base.util.CaseInsensitiveMap;
 import pcgen.cdom.base.CDOMListObject;
@@ -88,7 +88,7 @@ import pcgen.util.enumeration.Visibility;
  * @param <T>
  *            The class of object stored by this ObjectKey.
  */
-@SuppressWarnings({"PMD.ClassWithOnlyPrivateConstructorsShouldBeFinal", "checkstyle:FinalClass"})
+@SuppressWarnings("checkstyle:FinalClass")
 public class ObjectKey<T>
 {
 

@@ -20,7 +20,7 @@ package pcgen.cdom.facet.analysis;
 import java.util.List;
 import java.util.Map;
 
-import pcgen.base.formula.Formula;
+import pcgen.cdom.formula.Formula;
 import pcgen.cdom.base.FormulaFactory;
 import pcgen.cdom.content.ChallengeRating;
 import pcgen.cdom.content.LevelCommandFactory;
@@ -275,8 +275,7 @@ public class ChallengeRatingFacet
 		{
 			if (SettingsHandler.getGameAsProperty().get().getClassTypeByName(classType) != null)
 			{
-				Integer crMod = raceFacet.get(id).get(MapKey.CRMOD, classType);
-                return crMod;
+				return raceFacet.get(id).get(MapKey.CRMOD, classType);
 			}
 		}
 		else

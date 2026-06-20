@@ -40,12 +40,6 @@ ext {
         }
     }
 
-    programDistsImage = copySpec {
-        from(layout.buildDirectory.dir("launch4j")) {
-            include 'pcgen.exe'
-        }
-    }
-
     programScriptImage = copySpec {
         from('.') {
             include 'pcgen_low_mem.bat'
@@ -54,12 +48,6 @@ ext {
         }
         from('code') {
             include 'LICENSE'
-
-            eachFile { file ->
-                if(file.getName().endsWith(".sh")) {
-                    file.setMode(0755)
-                }
-            }
         }
     }
 
@@ -75,12 +63,6 @@ ext {
             include 'characters/*.pcg'
         }
     }
-
-    jreImage = copySpec {
-        from('.') {
-            include 'jre/windows/**'
-        }
-    }
 }
 
 application {
@@ -93,50 +75,36 @@ application {
     applicationDistribution.with(autobuildSpec)
     applicationDistribution.with(charactersImage)
     applicationDistribution.with(programScriptImage)
-    applicationDistribution.with(programDistsImage)
 }
 
 tasks.named("run") {
     dependsOn assemble, extractJavaFXLocal
+
+    def modsLibPath = layout.projectDirectory.dir("mods/lib").asFile.absolutePath
+
     // Required to fixed incorrectly added "--module-path" and adds correct modules.
     doFirst {
         jvmArgs = ["-ea",                       // -ea enables assertions
                    "--enable-preview",          // enable Java preview features
-                   "--module-path", layout.projectDirectory.dir("mods/lib").asFile.absolutePath,
-                   "--add-modules", "javafx.controls,javafx.web,javafx.swing,javafx.fxml,javafx.graphics"
+                   "--module-path", modsLibPath,
+                   "--add-modules", "javafx.controls,javafx.web,javafx.swing,javafx.fxml,javafx.graphics",
+                   "--enable-native-access", "javafx.graphics,javafx.web" // JDK-8347744
         ]
     }
 }
 
 tasks.named("installDist") {
-    dependsOn createExe
-    doLast{
-        delete {
-            delete fileTree(layout.buildDirectory.dir("install/pcgen/lib")) {
-                include 'javafx-*'
+    def installLibDir = layout.buildDirectory.dir("install/pcgen/lib")
+    doLast {
+        def libDir = installLibDir.get().asFile
+        def javafxLibs = libDir.listFiles({ File f ->
+            f.name.startsWith("javafx-") || f.name.startsWith("javafx.")
+        } as java.io.FileFilter)
+        javafxLibs?.each { f ->
+            if (!f.delete()) {
+                throw new GradleException("Failed to delete ${f}")
             }
         }
-    }
-}
-
-tasks.named("distTar") {
-    dependsOn createExe
-}
-
-tasks.named("distZip") {
-    dependsOn createExe
-}
-
-tasks.register("testZip", Zip) {
-    dependsOn converterJar, copyToLibs, copyToOutput
-    archiveClassifier.set('test')
-    into(zipRootFolder) {
-        with dataDistsImage
-        with docsDistsImage
-        with programDistsImage
-        with libsDistsImage
-        with autobuildSpec
-        with charactersImage
     }
 }
 
@@ -158,10 +126,9 @@ tasks.register("docsZip", Zip) {
 }
 
 tasks.register("programZip", Zip) {
-    dependsOn converterJar, createExe
+    dependsOn converterJar
     archiveClassifier.set('program')
     into(zipRootFolder) {
-        with programDistsImage
         with programScriptImage
         with autobuildSpec
     }
@@ -177,6 +144,6 @@ tasks.register("libsZip", Zip) {
 }
 
 tasks.register("buildDist") {
-    dependsOn dataZip, docsZip, programZip, libsZip, runtimeZip
+    dependsOn dataZip, docsZip, programZip, libsZip, jlinkZip
     description = "Build the five zip files (docs, data, program, libs and full) which comprise the autobuild distribution."
 }

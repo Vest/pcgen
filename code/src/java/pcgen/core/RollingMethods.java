@@ -23,7 +23,7 @@ import java.util.Stack;
 import java.util.Vector;
 import java.util.stream.IntStream;
 
-import pcgen.base.util.RandomUtil;
+import pcgen.util.RandomUtil;
 import pcgen.util.Logging;
 
 import org.nfunk.jep.JEP;
@@ -242,7 +242,7 @@ public final class RollingMethods
 		 * rolls the dice on the randomizer, and pushes the result back onto the stack.
 		 * Logging is performed if it is turned on.</p>
 		 */
-		@SuppressWarnings({"UseOfObsoleteCollectionType", "PMD.ReplaceVectorWithList"})
+		@SuppressWarnings("UseOfObsoleteCollectionType")
 		@Override
 		public void run(final Stack stack) throws ParseException
 		{
@@ -385,7 +385,7 @@ public final class RollingMethods
 				this.rolls = rolls;
 			}
 
-			public Integer getRolls()
+			Integer getRolls()
 			{
 				return rolls;
 			}
@@ -438,7 +438,7 @@ public final class RollingMethods
 				this.rolls = rolls;
 			}
 
-			public Integer getRolls()
+			Integer getRolls()
 			{
 				return rolls;
 			}

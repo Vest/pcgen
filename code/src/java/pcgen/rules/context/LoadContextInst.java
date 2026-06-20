@@ -1,16 +1,16 @@
 /*
  * Copyright 2007 (C) Tom Parker <thpr@users.sourceforge.net>
- * 
+ *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
  * Software Foundation; either version 2.1 of the License, or (at your option)
  * any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
  * details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this library; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
@@ -23,8 +23,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
+import pcgen.base.formula.base.ImplementedScope;
 import pcgen.base.formula.inst.NEPFormula;
 import pcgen.base.proxy.DeferredMethodController;
 import pcgen.base.text.ParsingSeparator;
@@ -63,6 +65,7 @@ import pcgen.util.Logging;
 
 abstract class LoadContextInst implements LoadContext
 {
+	Logger LOG = Logger.getLogger(LoadContextInst.class.getName());
 
 	private static final PrerequisiteWriter PREREQ_WRITER = new PrerequisiteWriter();
 
@@ -105,7 +108,7 @@ abstract class LoadContextInst implements LoadContext
 		FacetInitialization.initialize();
 	}
 
-	public LoadContextInst(AbstractReferenceContext rc, AbstractListContext lc, AbstractObjectContext oc)
+	LoadContextInst(AbstractReferenceContext rc, AbstractListContext lc, AbstractObjectContext oc)
 	{
 		Objects.requireNonNull(rc, "ReferenceContext cannot be null");
 		Objects.requireNonNull(lc, "ListContext cannot be null");
@@ -113,7 +116,7 @@ abstract class LoadContextInst implements LoadContext
 		ref = rc;
 		list = lc;
 		obj = oc;
-		var = new VariableContext(new PCGenManagerFactory(this));
+		var = new VariableContext(this);
 	}
 
 	@Override
@@ -135,7 +138,7 @@ abstract class LoadContextInst implements LoadContext
 	/**
 	 * Sets the extract URI. This is a shortcut for setting the URI on both the
 	 * graph and obj members.
-	 * 
+	 *
 	 * @param extractURI
 	 */
 	@Override
@@ -149,7 +152,7 @@ abstract class LoadContextInst implements LoadContext
 	/**
 	 * Sets the source URI. This is a shortcut for setting the URI on both the
 	 * graph and obj members.
-	 * 
+	 *
 	 * @param sourceURI
 	 */
 	@Override
@@ -160,7 +163,7 @@ abstract class LoadContextInst implements LoadContext
 		getReferenceContext().setSourceURI(sourceURI);
 		getListContext().setSourceURI(sourceURI);
 		clearStatefulInformation();
-		Logging.debugPrint("Starting Load of " + sourceURI);
+		LOG.log(Level.FINER, "Starting Load of " + sourceURI);
 	}
 
 	@Override
@@ -172,7 +175,7 @@ abstract class LoadContextInst implements LoadContext
 	/*
 	 * Get the type of context we're running in (either Editor or Runtime)
 	 */
-	public abstract String getContextType();
+	abstract String getContextType();
 
 	@Override
 	public AbstractObjectContext getObjectContext()
@@ -346,7 +349,7 @@ abstract class LoadContextInst implements LoadContext
 
 	/**
 	 * Produce the LST code for any occurrences of subtokens of the parent token.
-	 *  
+	 *
 	 * @param <T> The type of object to be processed, generally a CDOMObject.
 	 * @param cdo The object to be partially unparsed
 	 * @param tokenName The name of the parent token
@@ -373,12 +376,12 @@ abstract class LoadContextInst implements LoadContext
 	}
 
 	/**
-	 * Create a copy of a CDOMObject duplicating any references to the old 
+	 * Create a copy of a CDOMObject duplicating any references to the old
 	 * object. (e.g. Spell, Domain etc)
-	 * 
+	 *
 	 * Package protected rather than private for testing only
-	 *  
-	 * @param cdo The original object being copied. 
+	 *
+	 * @param cdo The original object being copied.
 	 * @param newName The name that should be given to the new object.
 	 * @return The newly created CDOMObject.
 	 */
@@ -546,13 +549,16 @@ abstract class LoadContextInst implements LoadContext
 
 	private LoadContext dropIntoContext(PCGenScope lvs)
 	{
-		Optional<PCGenScope> parent = lvs.getParentScope();
-		if (!parent.isPresent())
+		if (lvs.isGlobal())
 		{
-			//is Global
 			return this;
 		}
-		LoadContext parentLC = dropIntoContext(parent.get());
+		List<ImplementedScope> parents = lvs.drawsFrom();
+		if (parents.isEmpty())
+		{
+			return this;
+		}
+		LoadContext parentLC = dropIntoContext((PCGenScope) parents.get(0));
 		return new DerivedLoadContext(parentLC, lvs);
 	}
 
@@ -597,7 +603,7 @@ abstract class LoadContextInst implements LoadContext
 		/**
 		 * Constructs a new LoadContext derived from the given LoadContext
 		 */
-		public DerivedLoadContext(LoadContext parent, PCGenScope scope)
+		DerivedLoadContext(LoadContext parent, PCGenScope scope)
 		{
 			this.derivedScope = scope;
 			this.parent = parent;
@@ -826,12 +832,13 @@ abstract class LoadContextInst implements LoadContext
 			{
 				return this;
 			}
-			else if (!toScope.getParentScope().isPresent())
+			else if (toScope.isGlobal())
 			{
 				//No parent is global
 				return parent;
 			}
-			else if (toScope.getParentScope().get().equals(derivedScope))
+			else if (!toScope.drawsFrom().isEmpty()
+				&& toScope.drawsFrom().get(0).equals(derivedScope))
 			{
 				//Direct drop from this
 				return new DerivedLoadContext(this, toScope);

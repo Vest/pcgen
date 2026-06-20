@@ -24,8 +24,8 @@ import pcgen.base.formatmanager.FormatUtilities;
 import pcgen.base.formula.base.DependencyManager;
 import pcgen.base.formula.base.EvaluationManager;
 import pcgen.base.formula.base.FormulaFunction;
-import pcgen.base.formula.base.FormulaManager;
 import pcgen.base.formula.base.FormulaSemantics;
+import pcgen.base.formula.base.VariableLibrary;
 import pcgen.base.formula.exception.SemanticsFailureException;
 import pcgen.base.formula.parse.ASTQuotString;
 import pcgen.base.formula.parse.Node;
@@ -88,7 +88,6 @@ public class LookupFunction implements FormulaFunction
 		LoadContext context = semantics.get(ManagerKey.CONTEXT);
 		AbstractReferenceContext refContext = context.getReferenceContext();
 		//Table node (must be a DataTable)
-		@SuppressWarnings("PMD.PrematureDeclaration")
 		Object format = args[0].jjtAccept(visitor,
 			semantics.getWith(FormulaSemantics.ASSERTED, Optional.of(refContext.getManufacturer(DATATABLE_CLASS))));
 		if (!(format instanceof TableFormatManager tableFormatManager))
@@ -99,7 +98,6 @@ public class LookupFunction implements FormulaFunction
 		FormatManager<?> lookupFormat = tableFormatManager.getLookupFormat();
 
 		//Lookup value (at this point we enforce based on the Table Format)
-		@SuppressWarnings("PMD.PrematureDeclaration")
 		FormatManager<?> luFormat = (FormatManager<?>) args[1].jjtAccept(visitor,
 			semantics.getWith(FormulaSemantics.ASSERTED, Optional.of(lookupFormat)));
 		if (!lookupFormat.equals(luFormat))
@@ -109,7 +107,6 @@ public class LookupFunction implements FormulaFunction
 		}
 
 		//Result Column
-		@SuppressWarnings("PMD.PrematureDeclaration")
 		Object resultColumn = args[2].jjtAccept(visitor,
 			semantics.getWith(FormulaSemantics.ASSERTED, Optional.of(refContext.getManufacturer(COLUMN_CLASS))));
 		if (!(resultColumn instanceof ColumnFormatManager<?> cf))
@@ -153,7 +150,6 @@ public class LookupFunction implements FormulaFunction
 		FormatManager<?> lookupFormat = dataTable.getFormat(0);
 
 		//Lookup value (format based on the table)
-		@SuppressWarnings("PMD.PrematureDeclaration")
 		Object lookupValue =
 				args[1].jjtAccept(visitor, manager.getWith(EvaluationManager.ASSERTED, Optional.of(lookupFormat)));
 
@@ -167,8 +163,8 @@ public class LookupFunction implements FormulaFunction
 			FormatManager<?> fmt = column.getFormatManager();
 			System.out.println("Lookup called on invalid column: '" + columnName + "' is not present on table '"
 				+ dataTable.getName() + "' assuming default for " + fmt.getIdentifierType());
-			FormulaManager fm = manager.get(EvaluationManager.FMANAGER);
-			return fm.getDefault(fmt);
+			VariableLibrary varLib = manager.get(EvaluationManager.VARLIB);
+			return varLib.getDefault(fmt);
 		}
 		String lookupRule = "EXACT";
 		if (args.length == 4)
@@ -183,8 +179,8 @@ public class LookupFunction implements FormulaFunction
 			System.out.println(
 				"Lookup called on invalid item: '" + lookupValue + "' is not present in the first row of table '"
 					+ dataTable.getName() + "' assuming default for " + fmt.getIdentifierType());
-			FormulaManager fm = manager.get(EvaluationManager.FMANAGER);
-			return fm.getDefault(fmt);
+			VariableLibrary varLib = manager.get(EvaluationManager.VARLIB);
+			return varLib.getDefault(fmt);
 		}
 		return dataTable.lookup(lookupType, lookupValue, columnName);
 	}

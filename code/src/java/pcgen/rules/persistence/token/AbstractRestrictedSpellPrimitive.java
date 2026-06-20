@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.StringTokenizer;
 
-import pcgen.base.formula.Formula;
+import pcgen.cdom.formula.Formula;
 import pcgen.cdom.base.CDOMList;
 import pcgen.cdom.base.CDOMReference;
 import pcgen.cdom.base.Converter;
@@ -100,18 +100,18 @@ public abstract class AbstractRestrictedSpellPrimitive implements PrimitiveToken
 
 	private static class Restriction
 	{
-		public final Formula minLevel;
-		public final Formula maxLevel;
-		public final Boolean knownRequired;
+		final Formula minLevel;
+		final Formula maxLevel;
+		final Boolean knownRequired;
 
-		public Restriction(Formula levelMin, Formula levelMax, Boolean known)
+		Restriction(Formula levelMin, Formula levelMax, Boolean known)
 		{
 			minLevel = levelMin;
 			maxLevel = levelMax;
 			knownRequired = known;
 		}
 
-		public String getLSTformat()
+		String getLSTformat()
 		{
 			StringBuilder sb = new StringBuilder();
 			if (knownRequired != null)

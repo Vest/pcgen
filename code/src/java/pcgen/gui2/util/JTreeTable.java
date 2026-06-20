@@ -139,6 +139,10 @@ public class JTreeTable extends JTableEx
 	@Override
 	public int getEditingRow()
 	{
+		if (editingColumn < 0)
+		{
+			return editingRow;
+		}
 		return (getColumnClass(editingColumn) == TreeTableNode.class) ? (-1) : editingRow;
 	}
 
@@ -264,7 +268,7 @@ public class JTreeTable extends JTableEx
 		 * not be guaranteed the tree will have finished processing
 		 * the event before us.
 		 **/
-		public void setTreeTableModel(TreeTableModel model)
+		void setTreeTableModel(TreeTableModel model)
 		{
 			if (treeTableModel != null)
 			{
@@ -463,7 +467,7 @@ public class JTreeTable extends JTableEx
 		private int visibleRow;
 		private DefaultTableCellRenderer tableCellRenderer;
 
-		public TreeTableCellRenderer()
+		TreeTableCellRenderer()
 		{
 			this.tableCellRenderer = new DefaultTableCellRenderer()
 			{
@@ -554,7 +558,7 @@ public class JTreeTable extends JTableEx
 		 * @param g
 		 **/
 		@Override
-		public void paint(final Graphics g)
+        public void paint(final Graphics g)
 		{
 			Rectangle rect = JTreeTable.this.getCellRect(visibleRow, 0, true);
 			int offset = -rect.y;

@@ -33,11 +33,11 @@ public class PCCasterLevelTotalTermEvaluator extends BasePCTermEvaluator impleme
 		this.originalText = originalText;
 	}
 
-	// Makes no sense without a spell
+	// If no spell is given then we just want to total caster level
 	@Override
 	public Float resolve(PlayerCharacter pc)
 	{
-		return 0.0f;
+		return resolve(pc, null);
 	}
 
 	@Override
@@ -65,6 +65,7 @@ public class PCCasterLevelTotalTermEvaluator extends BasePCTermEvaluator impleme
 
 		return (float) iLev;
 	}
+
 
 	@Override
 	public boolean isSourceDependant()

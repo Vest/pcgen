@@ -1,0 +1,55 @@
+
+def PLUGINS_GROUP = "PCGen plugins"
+
+def buildClassesDir = "build/classes/java/main"
+
+def pluginsDir = "${projectDir}/plugins"
+
+tasks.register("cleanPlugins", Delete) {
+    description = "Clean all working files"
+    group = PLUGINS_GROUP
+
+    delete fileTree(dir: pluginsDir, include: "*.jar")
+}
+
+def createJarTask = {String taskName, String archiveName, String categoryName, String description, String includePattern ->
+    tasks.register(taskName, Jar) {
+        this.description = description
+        group = PLUGINS_GROUP
+        dependsOn tasks.named("classes")
+
+        archiveFileName = archiveName
+        manifest {
+            attributes(
+                    "Implementation-Title": "PCGen ${categoryName} plugins",
+                    "Implementation-Version": project.version,
+                    "Class-Path": "lib/pcgen.jar"
+            )
+        }
+
+        destinationDirectory = file("${pluginsDir}")
+
+        from("${buildClassesDir}") {
+            include includePattern
+        }
+    }
+}
+
+createJarTask("jarExportPlugins", "exportplugins.jar", "export", "Build (Link) Export Token plugin jar files", "plugin/exporttokens/**/*.class")
+createJarTask("jarBonusPlugins", "bonusplugins.jar", "bonus", "Build (Link) plugin Bonus Token jar files", "plugin/bonustokens/**/*.class")
+createJarTask("jarLstPlugins", "lstplugins.jar", "LST", "Build (Link) plugin LST Token jar files", "plugin/lsttokens/**/*.class")
+createJarTask("jarPrePlugins", "preplugins.jar", "prereq", "Build (Link) Prereq Token plugin jar files", "plugin/pretokens/**/*.class")
+createJarTask("jarConverterPlugins", "converterplugins.jar", "converter", "Build (Link) Converter plugin jar files", "plugin/converter/**/*.class")
+createJarTask("jarModifierPlugins", "modifierplugins.jar", "modifier", "Build (Link) Lst Modifier Token plugin jar files", "plugin/modifier/**/*.class")
+createJarTask("jarPrimitivePlugins", "primitiveplugins.jar", "primitive", "Build (Link) Lst Primitive Token plugin jar files", "plugin/primitive/**/*.class")
+createJarTask("jarQualifierPlugins", "qualifierplugins.jar", "qualifier", "Build (Link) Lst Compatibility Token plugin jar files", "plugin/qualifier/**/*.class")
+createJarTask("jarFunctionPlugins", "functionplugins.jar", "function", "Build (Link) Custom Function jar files", "plugin/function/**/*.class")
+createJarTask("jarGroupingPlugins", "groupingplugins.jar", "grouping", "Build (Link) Grouping plugin jar files", "plugin/grouping/**/*.class")
+createJarTask("jarJepCommandsPlugins", "jepcommandsplugins.jar", "JEP command", "Build (Link) Jep Command plugin jar files", "plugin/jepcommands/**/*.class")
+
+tasks.register("jarAllPlugins") {
+    description = "Create the plugin jars"
+    group =  BasePlugin.BUILD_GROUP
+    dependsOn jarExportPlugins, jarBonusPlugins, jarLstPlugins, jarPrePlugins, jarConverterPlugins, jarModifierPlugins,
+              jarPrimitivePlugins, jarQualifierPlugins, jarFunctionPlugins, jarGroupingPlugins, jarJepCommandsPlugins
+}

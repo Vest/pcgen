@@ -35,7 +35,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.jetbrains.annotations.NotNull;
-import pcgen.base.formula.Formula;
+import pcgen.cdom.formula.Formula;
+import pcgen.base.formula.base.ImplementedScope;
 import pcgen.base.formula.base.VarScoped;
 import pcgen.base.lang.StringUtil;
 import pcgen.base.util.DoubleKeyMapToList;
@@ -1239,11 +1240,30 @@ public abstract class CDOMObject extends ConcretePrereqObject
 		return Optional.empty();
 	}
 
-	@Override
 	public Optional<VarScoped> getVariableParent()
 	{
 		//Fall back to Global
 		return Optional.empty();
+	}
+
+	@Override
+	public VarScoped getProviderFor(ImplementedScope implScope)
+	{
+		if (implScope.isGlobal())
+		{
+			return this;
+		}
+		Optional<String> localName = getLocalScopeName();
+		if (localName.isPresent() && localName.get().equals(implScope.getName()))
+		{
+			return this;
+		}
+		Optional<VarScoped> parent = getVariableParent();
+		if (parent.isPresent())
+		{
+			return parent.get().getProviderFor(implScope);
+		}
+		return this;
 	}
 
 	@Override
@@ -1341,7 +1361,6 @@ public abstract class CDOMObject extends ConcretePrereqObject
 	 * @return The local child of the given child type and child name
 	 */
 	@Override
-	@SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract")
 	public PCGenScoped getLocalChild(String childType, String childName)
 	{
 		//none by default
@@ -1357,7 +1376,6 @@ public abstract class CDOMObject extends ConcretePrereqObject
 	 * @return The List of child types that this CDOMObject contains
 	 */
 	@Override
-	@SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract")
 	public List<String> getChildTypes()
 	{
 		return Collections.emptyList();
@@ -1372,7 +1390,6 @@ public abstract class CDOMObject extends ConcretePrereqObject
 	 * @return The List of children of the given child type
 	 */
 	@Override
-	@SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract")
 	public List<PCGenScoped> getChildren(String childType)
 	{
 		//none by default

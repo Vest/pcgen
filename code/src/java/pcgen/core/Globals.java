@@ -435,13 +435,23 @@ public final class Globals
 		int multiplier = 0;
 		if (bd == null)
 		{
-			//Need to test for higher dice
-			final RollInfo aRollInfo = new RollInfo(aDamage);
-			final String baseDice = "1d" + Integer.toString(aRollInfo.sides);
+			// No exact BaseDice match — try interpreting aDamage as NdM and look
+			// up a 1dM step. If aDamage isn't parseable as a roll at all, we have
+			// nothing to scale; return it unchanged.
+			final RollInfo aRollInfo;
+			try
+			{
+				aRollInfo = new RollInfo(aDamage);
+			}
+			catch (IllegalArgumentException e)
+			{
+				return aDamage;
+			}
+			final String baseDice = "1d" + aRollInfo.getSides();
 			bd = ref.silentlyGetConstructedCDOMObject(BaseDice.class, baseDice);
 			if (bd != null)
 			{
-				multiplier = aRollInfo.times;
+				multiplier = aRollInfo.getTimes();
 			}
 		}
 		else
@@ -451,7 +461,14 @@ public final class Globals
 		RollInfo bi;
 		if (bd == null)
 		{
-			bi = new RollInfo(aDamage);
+			try
+			{
+				bi = new RollInfo(aDamage);
+			}
+			catch (IllegalArgumentException e)
+			{
+				return aDamage;
+			}
 		}
 		else
 		{
@@ -484,10 +501,7 @@ public final class Globals
 		}
 		if (multiplier > 1)
 		{
-			// Ugh, have to do this for "cloning" to avoid polluting the master
-			// RollInfo
-			bi = new RollInfo(bi.toString());
-			bi.times *= multiplier;
+			bi = new RollInfo(bi, multiplier);
 		}
 		return bi.toString();
 	}
@@ -540,8 +554,8 @@ public final class Globals
 
 	/**
 	 * Check if enough data has been loaded to support character creation.
-	 * Will also report to the log the number of items of each of the 
-	 * necessary types that are currently loaded.  
+	 * Will also report to the log the number of items of each of the
+	 * necessary types that are currently loaded.
 	 * @return true or false
 	 */
 	public static boolean displayListsHappy()
@@ -722,7 +736,7 @@ public final class Globals
 	}
 
 	/**
-	 * Apply the user's preferences to the initial state of the Globals.  
+	 * Apply the user's preferences to the initial state of the Globals.
 	 */
 	public static void initPreferences()
 	{
@@ -789,8 +803,8 @@ public final class Globals
 
 	/**
 	 * Sort Pcgen Object list by name
-	 * @param <T> 
-	 * 
+	 * @param <T>
+	 *
 	 * @param aList
 	 * @return Sorted list of Pcgen Objects
 	 */
@@ -1033,7 +1047,7 @@ public final class Globals
 
 	private static int bonusParsing(final String l, final int level, int num, final PlayerCharacter aPC)
 	{
-		// should be in format levelnum,rangenum[,numchoices] 
+		// should be in format levelnum,rangenum[,numchoices]
 		final StringTokenizer aTok = new StringTokenizer(l, "|", false);
 		final int startLevel = Integer.parseInt(aTok.nextToken());
 		final String rangeLevelFormula = aTok.nextToken();

@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import pcgen.base.formula.Formula;
+import pcgen.cdom.formula.Formula;
 
 /**
  * SpellProgressionInfo contains information about Spell Progression in support
@@ -322,8 +322,7 @@ public class SpellProgressionCache implements Cloneable
 		 */
 		if (knownProgression != null)
 		{
-			int lvl = knownProgression.getMinLevelForSpellLevel(spellLevel, allowBonus);
-            return lvl;
+			return knownProgression.getMinLevelForSpellLevel(spellLevel, allowBonus);
 		}
 
 		return -1;

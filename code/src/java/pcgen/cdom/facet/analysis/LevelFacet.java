@@ -22,7 +22,7 @@ import java.util.EventObject;
 
 import javax.swing.event.EventListenerList;
 
-import pcgen.base.formula.Formula;
+import pcgen.cdom.formula.Formula;
 import pcgen.cdom.enumeration.CharID;
 import pcgen.cdom.enumeration.FormulaKey;
 import pcgen.cdom.facet.FormulaResolvingFacet;
@@ -200,8 +200,8 @@ public class LevelFacet extends AbstractStorageFacet<CharID> implements ClassLev
 	 */
 	private static class LevelCacheInfo
 	{
-		public int monsterLevels;
-		public int nonMonsterLevels;
+		int monsterLevels;
+		int nonMonsterLevels;
 
 		@Override
 		public int hashCode()

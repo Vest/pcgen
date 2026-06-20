@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Objects;
 
 import pcgen.base.enumeration.TypeSafeConstant;
-import pcgen.base.formula.Formula;
+import pcgen.cdom.formula.Formula;
 import pcgen.base.util.CaseInsensitiveMap;
 import pcgen.cdom.base.FormulaFactory;
 import pcgen.cdom.formula.FixedSizeFormula;
@@ -38,7 +38,7 @@ import pcgen.core.analysis.SizeUtilities;
  * *Important*: This should NOT be used to store items from the DEFINE: token,
  * as those are Variables that should be stored using VariableKey
  */
-@SuppressWarnings({"PMD.ClassWithOnlyPrivateConstructorsShouldBeFinal", "checkstyle:FinalClass"})
+@SuppressWarnings("checkstyle:FinalClass")
 public class FormulaKey implements TypeSafeConstant
 {
 
