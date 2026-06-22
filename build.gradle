@@ -26,7 +26,7 @@ plugins {
     id 'application'                                    // Creating application bundles
     id 'build-dashboard'                                // Produces a build report
     id 'checkstyle'                                     // Checkstyle for Java, configured further below
-    id 'com.github.spotbugs' version '6.5.6'            // Spotbugs for Java
+    id 'com.github.spotbugs' version '6.5.8'            // Spotbugs for Java
     id 'maven-publish'                                  // Publishing to Maven Central
     id 'pmd'                                            // PMD for Java, configured further below
     id 'de.undercouch.download' version '5.7.0'         // Shows download percentage
@@ -138,6 +138,14 @@ sourceSets {
         }
         compileClasspath += sourceSets.test.output + sourceSets.test.compileClasspath
         runtimeClasspath += sourceSets.test.output + sourceSets.test.runtimeClasspath
+    }
+}
+
+// Copy LICENSE onto the classpath for the About dialog (Windows symlink fallback).
+tasks.named("processResources") {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    from(rootProject.layout.projectDirectory.file("LICENSE")) {
+        into "pcgen/gui3/dialog"
     }
 }
 
@@ -263,18 +271,22 @@ def hostOs = supportedHostOs.find { Os.isFamily(it.key) }?.value
 if (hostOs == null) {
     throw new GradleException("Unsupported host OS: '${System.getProperty("os.name")}'. Supported families: ${supportedHostOs.values().join(", ")}")
 }
-def hostArch = (System.getProperty("os.arch") == "aarch64") ? "aarch64" : "x64"
+def supportedHostArch = ["x86_64": "x64", "amd64": "x64", "aarch64": "aarch64"]
+def rawHostArch = System.getProperty("os.arch")
+def hostArch = supportedHostArch[rawHostArch]
+if (hostArch == null) {
+    throw new GradleException("Unsupported host arch: '${rawHostArch}'. Supported: ${supportedHostArch.keySet().join(", ")}")
+}
 def hostJdkExt = (hostOs == "windows") ? "zip" : "tar.gz"
 def hostJfxOsPackage = (hostOs == "mac") ? "osx" : hostOs
-def hostJfxArchSuffix = (hostArch == "x64") ? "-x64" : "-aarch64"
+def hostJfxArchSuffix = "-${hostArch}"
 
 jlink {
     options = ['--strip-debug', '--no-header-files', '--no-man-pages']
     addExtraDependencies('javafx')
     forceMerge('jep', 'fop', 'Saxon-HE',
                'commons-lang3', 'spring',
-               'freemarker', 'argparse4j', 'xmlunit',
-               'annotations', 'spotbugs', 'xmlresolver')
+               'freemarker', 'argparse4j', 'xmlresolver')
 
     // Resolve packages → modules with the JDK's jdeps; the plugin's default
     // resolver silently misses JDK modules on some distros (e.g. Temurin 25).
@@ -335,7 +347,7 @@ jlink {
 
     // Use the jpackage tool that comes with Java to build native installers
     jpackage {
-        def licenseFile = layout.projectDirectory.file("code/LICENSE")
+        def licenseFile = layout.projectDirectory.file("LICENSE")
         targetPlatformName = "${hostOs}-${hostArch}"
 
         def appVersionStr = plainVerNum.replaceAll(/[^0-9.].*/, '').replaceAll(/\.$/, '')
@@ -635,29 +647,7 @@ tasks.register("extractJfxMods", Copy) {
 
 tasks.register("downloadJavaFXLocal", Download) {
     description = "Downloads the JavaFX modules for the current platform to the 'mods' directory for local testing"
-    def supportedOS = [(Os.FAMILY_WINDOWS): "windows",
-                       (Os.FAMILY_MAC)    : "osx",
-                       (Os.FAMILY_UNIX)   : "linux"]
-    def osName = System.getProperty("os.name").toLowerCase(Locale.ENGLISH)
-    def currentOS = supportedOS
-            .entrySet()
-            .stream()
-            .filter(i -> Os.isFamily(i.key))
-            .map { it.value }
-            .findFirst()
-            .orElseThrow { new GradleException("Unsupported OS detected: '${osName}'. Supported families are: ${supportedOS.keySet().join(", ")}") }
-
-    def supportedArch = ["x86_64" : "-x64",
-                         "amd64"  : "-x64",
-                         "aarch64": "-aarch64"]
-
-    def hostArchitecture = System.getProperty("os.arch")
-    def archAppend = supportedArch[hostArchitecture]
-    if (archAppend == null) {
-        throw new GradleException("Unsupported arch detected: '${hostArchitecture}'. Supported architectures are: x86_64, amd64 and aarch64")
-    }
-
-    def fileName = "openjfx-${project.ext.javafxVersion}_${currentOS}${archAppend}_bin-sdk.zip"
+    def fileName = "openjfx-${project.ext.javafxVersion}_${hostJfxOsPackage}${hostJfxArchSuffix}_bin-sdk.zip"
 
     src "https://download2.gluonhq.com/openjfx/${project.ext.javafxVersion}/${fileName}"
     dest layout.projectDirectory.file("mods/${fileName}")
