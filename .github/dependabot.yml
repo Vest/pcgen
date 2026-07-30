@@ -11,3 +11,10 @@ updates:
   - dependency-name: jep:jep
     versions:
     - "> 2.4.1"
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 10
+  reviewers:
+  - grimreaper
