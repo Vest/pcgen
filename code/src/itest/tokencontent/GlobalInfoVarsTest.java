@@ -101,4 +101,22 @@ class GlobalInfoVarsTest extends AbstractTokenModelTest
 		assertFalse(INFOVARS_TOKEN.parseToken(context, template, "Detail|NotDeclaredGlobally").passed(),
 				"INFOVARS must reject a variable that is not a declared global");
 	}
+
+	/**
+	 * Documents a divergence from the 2018 INFO/INFOVARS spec: the spec describes a
+	 * scoped form INFOVARS:x|SCOPE=var (with the scope prefix optional for the
+	 * default VAR scope). That grammar is NOT implemented — INFOVARS currently
+	 * accepts only bare global variable names, so a "SCOPE=var" token is treated as
+	 * a single (illegal) variable name and rejected. This test pins that boundary;
+	 * if the scoped form is ever implemented, it should be updated to expect success.
+	 */
+	@Test
+	void testInfoVarsScopedFormNotYetSupported()
+	{
+		declareGlobalVar("InfoTestVar");
+		PCTemplate template = create(PCTemplate.class, "TemplateScopedForm");
+		assertTrue(INFO_TOKEN.parseToken(context, template, "Detail|Value is {0}.").passed());
+		assertFalse(INFOVARS_TOKEN.parseToken(context, template, "Detail|VAR=InfoTestVar").passed(),
+				"The spec's scope=variable form (e.g. VAR=x) is not implemented; it must currently be rejected");
+	}
 }
