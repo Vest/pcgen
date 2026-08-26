@@ -156,4 +156,31 @@ class GlobalInfoVarsTest extends AbstractTokenModelTest
 		assertFalse(INFOVARS_TOKEN.parseToken(context, template, "Enchant|CritMult").passed(),
 				"INFOVARS cannot reach a variable that only exists in a local (head) scope");
 	}
+
+	/**
+	 * Demonstrates the migration pattern for replacing a substitution-bearing
+	 * ASPECT/DESC with INFO/INFOVARS. Pathfinder has ~13k such tokens, e.g.
+	 *
+	 *   ASPECT:Ability Benefit|(%1 ft.)|JetSpeed
+	 *
+	 * Those %-substitutions are fed by old-formula-system DEFINE: variables, which
+	 * INFOVARS cannot read. The conversion requires (a) migrating the variable to a
+	 * new-system GLOBAL declaration, then (b) expressing the text as a MessageFormat:
+	 *
+	 *   GLOBAL:NUMBER=JetSpeed
+	 *   INFO:AbilityBenefit|({0} ft.)   INFOVARS:AbilityBenefit|JetSpeed
+	 *
+	 * This test shows that migrated form loading and resolving end-to-end. It is the
+	 * executable template for converting an ASPECT to INFOVARS (it does NOT change
+	 * shipped data — the DEFINE->GLOBAL migration is a separate data-team decision).
+	 */
+	@Test
+	void testAspectMigrationPatternToInfoVars()
+	{
+		declareGlobalVar("JetSpeed");
+		PCTemplate template = create(PCTemplate.class, "MonsterWithJet");
+		assertTrue(INFO_TOKEN.parseToken(context, template, "AbilityBenefit|({0} ft.)").passed());
+		assertTrue(INFOVARS_TOKEN.parseToken(context, template, "AbilityBenefit|JetSpeed").passed());
+		finishLoad();
+	}
 }
