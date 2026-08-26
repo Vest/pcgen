@@ -31,6 +31,7 @@ import plugin.lsttokens.InfoLst;
 import plugin.lsttokens.InfoVarsLst;
 import plugin.lsttokens.testsupport.TokenRegistration;
 import plugin.lsttokens.variable.GlobalToken;
+import plugin.lsttokens.variable.LocalToken;
 import tokenmodel.testsupport.AbstractTokenModelTest;
 import util.TestURI;
 
@@ -45,6 +46,7 @@ class GlobalInfoVarsTest extends AbstractTokenModelTest
 {
 
 	private static final GlobalToken GLOBAL_TOKEN = new GlobalToken();
+	private static final LocalToken LOCAL_TOKEN = new LocalToken();
 	private static final InfoLst INFO_TOKEN = new InfoLst();
 	private static final InfoVarsLst INFOVARS_TOKEN = new InfoVarsLst();
 
@@ -74,6 +76,21 @@ class GlobalInfoVarsTest extends AbstractTokenModelTest
 		{
 			result.printMessages(TestURI.getURI());
 			throw new IllegalStateException("Setup failed: could not declare global var " + varName);
+		}
+		context.getReferenceContext().importObject(dv);
+	}
+
+	/**
+	 * Declares a NUMBER variable in the given local scope via the real LOCAL token.
+	 */
+	private void declareLocalVar(String scope, String varName)
+	{
+		DatasetVariable dv = new DatasetVariable();
+		ParseResult result = LOCAL_TOKEN.parseToken(context, dv, scope + "|NUMBER=" + varName);
+		if (!result.passed())
+		{
+			result.printMessages(TestURI.getURI());
+			throw new IllegalStateException("Setup failed: could not declare local var " + varName);
 		}
 		context.getReferenceContext().importObject(dv);
 	}
@@ -118,5 +135,25 @@ class GlobalInfoVarsTest extends AbstractTokenModelTest
 		assertTrue(INFO_TOKEN.parseToken(context, template, "Detail|Value is {0}.").passed());
 		assertFalse(INFOVARS_TOKEN.parseToken(context, template, "Detail|VAR=InfoTestVar").passed(),
 				"The spec's scope=variable form (e.g. VAR=x) is not implemented; it must currently be rejected");
+	}
+
+	/**
+	 * LegacyKing's example: a weapon's crit multiplier lives in the local
+	 * PC.EQUIPMENT.PART (head) scope. An INFO/INFOVARS on another object (e.g. a
+	 * weapon-enchantment ability) cannot pull that head-local variable, because
+	 * INFOVARS resolves against the global scope and has no per-instance selector
+	 * to say "this weapon's head". Here the variable IS declared (in the local
+	 * head scope), yet INFOVARS still rejects it — proving the limitation is the
+	 * scope, not a missing declaration.
+	 */
+	@Test
+	void testInfoVarsCannotReachLocalHeadScopeVariable()
+	{
+		// Declare CritMult in the equipment-part (weapon head) LOCAL scope.
+		declareLocalVar("PC.EQUIPMENT.PART", "CritMult");
+		PCTemplate template = create(PCTemplate.class, "WeaponEnchantAbility");
+		assertTrue(INFO_TOKEN.parseToken(context, template, "Enchant|Crit multiplier is {0}.").passed());
+		assertFalse(INFOVARS_TOKEN.parseToken(context, template, "Enchant|CritMult").passed(),
+				"INFOVARS cannot reach a variable that only exists in a local (head) scope");
 	}
 }
