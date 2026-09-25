@@ -45,7 +45,7 @@ import pcgen.system.PCGenSettings;
  * This is the base class for several objects in the PCGen database.
  */
 public class PObject extends CDOMObject
-		implements Cloneable, Serializable, Comparable<Object>, KeyedListContainer, QualifyingObject
+		implements Serializable, Comparable<Object>, KeyedListContainer, QualifyingObject
 {
 
 	private HiddenTypeFacet hiddenTypeFacet = FacetLibrary.getFacet(HiddenTypeFacet.class);
@@ -201,6 +201,22 @@ public class PObject extends CDOMObject
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * Returns whether this object is of the given single {@link Type}. Fast path
+	 * for callers that already hold an interned Type: skips the uppercase,
+	 * tokenize and {@code Type.getConstant} intern that {@link #isType(String)}
+	 * must do.
+	 *
+	 * @param type
+	 *            The Type to check for
+	 * @return true if this object is of the given Type; false otherwise
+	 */
+	@Override
+	public boolean isType(final Type type)
+	{
+		return containsInList(ListKey.TYPE, type);
 	}
 
 	@Override

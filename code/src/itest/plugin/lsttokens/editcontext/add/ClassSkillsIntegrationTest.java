@@ -32,9 +32,8 @@ import plugin.lsttokens.testsupport.CDOMTokenLoader;
 import plugin.lsttokens.testsupport.TokenRegistration;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
-public class ClassSkillsIntegrationTest extends
+class ClassSkillsIntegrationTest extends
 		AbstractListIntegrationTestCase<CDOMObject, Skill>
 {
 
@@ -78,12 +77,6 @@ public class ClassSkillsIntegrationTest extends
 	public char getJoinCharacter()
 	{
 		return '|';
-	}
-
-	@Test
-	public void dummyTest()
-	{
-		// Just to get Eclipse to recognize this as a JUnit 4.0 Test Case
 	}
 
 	@Override

@@ -25,9 +25,7 @@ import plugin.lsttokens.editcontext.testsupport.AbstractTypeSafeIntegrationTestC
 import plugin.lsttokens.template.RegionToken;
 import plugin.lsttokens.testsupport.CDOMTokenLoader;
 
-import org.junit.jupiter.api.Test;
-
-public class RegionIntegrationTest extends
+class RegionIntegrationTest extends
 		AbstractTypeSafeIntegrationTestCase<PCTemplate>
 {
 
@@ -64,9 +62,4 @@ public class RegionIntegrationTest extends
 		return false;
 	}
 
-	@Test
-	public void dummyTest()
-	{
-		// Just to get Eclipse to recognize this as a JUnit 4.0 Test Case
-	}
 }

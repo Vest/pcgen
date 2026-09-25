@@ -23,6 +23,8 @@ import java.awt.FontFormatException;
 import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Optional;
@@ -40,6 +42,7 @@ import pcgen.facade.core.UIDelegate;
 import pcgen.gui2.PCGenUIManager;
 import pcgen.gui2.UIPropertyContext;
 import pcgen.gui2.converter.TokenConverter;
+import pcgen.gui3.GraphicsStartupError;
 import pcgen.gui3.PanelFromResource;
 import pcgen.gui3.namegen.RandomNameDialog;
 import pcgen.gui3.dialog.OptionsPathDialogController;
@@ -146,9 +149,8 @@ public final class Main
 		String aPath = System.getProperty("pcgen.config"); //$NON-NLS-1$
 		if (aPath != null)
 		{
-			File testPath = new File(aPath);
 			// Then make sure it's an existing folder
-			if (testPath.exists() && testPath.isDirectory())
+			if (Files.isDirectory(Path.of(aPath)))
 			{
 				return aPath;
 			}
@@ -185,7 +187,15 @@ public final class Main
 		loadProperties(true);
 		initPrintPreviewFonts();
 
-		new JFXPanel();
+		try
+		{
+			// If JavaFX cannot be initialized, show a user-friendly message
+			new JFXPanel();
+		}
+		catch (RuntimeException | LinkageError toolkitFailure)
+		{
+			GraphicsStartupError.reportAndExit(toolkitFailure);
+		}
 
 		PCGenPreloader splash = new PCGenPreloader();
 		runBootstrapTasks(splash);
@@ -219,19 +229,9 @@ public final class Main
 				ConfigurationSettings.getOutputSheetsDir()
 		};
 		String missingDirs = Arrays.stream(neededDirs)
-				.map(File::new)
-				.filter(Predicate.not(File::exists))
-				.map(dir -> {
-					try
-					{
-						return dir.getCanonicalPath();
-					}
-					catch (IOException e)
-					{
-						Logging.errorPrint("Unable to find canonical path for " + dir);
-						return dir.getPath();
-					}
-				})
+				.map(Path::of)
+				.filter(Predicate.not(Files::exists))
+				.map(dir -> dir.toAbsolutePath().normalize())
 				.map(path -> "  " + path)
 				.collect(Collectors.joining("\n"));
 
@@ -273,17 +273,32 @@ public final class Main
 		defaultFactory.registerPropertyContext(UIPropertyContext.getInstance());
 		defaultFactory.registerPropertyContext(LegacySettings.getInstance());
 		defaultFactory.loadPropertyContexts();
-		//Make savepath directory if it doesn't exist
-		String savepath = settingscontext.getProperty(PCGenSettings.PCG_SAVE_PATH);
-		File savepath_dir = new File(savepath);
-		if (!savepath_dir.exists() && !savepath_dir.isDirectory())
+		//Make savepath directory (and any missing parents) if it doesn't exist
+		ensureSavePathExists(settingscontext.getProperty(PCGenSettings.PCG_SAVE_PATH));
+	}
+
+	/**
+	 * Ensure the character save directory exists, creating any missing parent
+	 * directories. The default save path lives under {@code ~/PCGen/characters},
+	 * whose parent may not exist on a fresh install, so parents must be created
+	 * too.
+	 *
+	 * @param savePath the configured PCG_SAVE_PATH
+	 * @return whether the directory exists after this call
+	 */
+	static boolean ensureSavePathExists(String savePath)
+	{
+		Path savePathDir = Path.of(savePath);
+		try
 		{
-            Logging.log(Level.INFO, "Making directory " + savepath_dir);
-            boolean succeeded = savepath_dir.mkdir();
-            if (!succeeded)
-            {
-                Logging.log(Level.SEVERE, "Unable to create PCG_SAVE_PATH " + savepath_dir);
-            }
+			// createDirectories creates missing parents and is a no-op if it already exists.
+			Files.createDirectories(savePathDir);
+			return true;
+		}
+		catch (IOException e)
+		{
+			Logging.errorPrint("Unable to create PCG_SAVE_PATH " + savePathDir, e);
+			return false;
 		}
 	}
 
@@ -363,32 +378,68 @@ public final class Main
 		return result;
 	}
 
+	/**
+	 * Shuts PCGen down, saving settings and cleaning up temporary files before
+	 * terminating the JVM. Each cleanup step is isolated so that one failure
+	 * cannot prevent the others from running or leave the JVM alive.
+	 *
+	 * @param success whether PCGen is exiting normally
+	 */
 	public static void shutdown(boolean success)
 	{
-		configFactory.savePropertyContexts();
-		BatchExporter.removeTemporaryFiles();
-		PropertyContextFactory.getDefaultFactory().savePropertyContexts();
-
-		// Need to (possibly) write customEquipment.lst
-		if (PCGenSettings.OPTIONS_CONTEXT.getBoolean(PCGenSettings.OPTION_SAVE_CUSTOM_EQUIPMENT))
+		try
 		{
-			CustomData.writeCustomItems();
-		}
+			// Lambdas, not method references, so the target class is loaded only when the
+			// step body runs inside runCleanupStep's guard. A method reference resolves it
+			// eagerly here, where a failure (e.g. NoClassDefFoundError) would not be caught.
+			runCleanupStep("save configuration settings", () -> configFactory.savePropertyContexts());
+			runCleanupStep("remove temporary export files", () -> BatchExporter.removeTemporaryFiles());
+			runCleanupStep("save property contexts",
+					() -> PropertyContextFactory.getDefaultFactory().savePropertyContexts());
 
-		GracefulExit.exit(success ? 0 : 1);
+			// Need to (possibly) write customEquipment.lst
+			runCleanupStep("write custom equipment", () -> {
+				if (PCGenSettings.OPTIONS_CONTEXT.getBoolean(PCGenSettings.OPTION_SAVE_CUSTOM_EQUIPMENT))
+				{
+					CustomData.writeCustomItems();
+				}
+			});
+		}
+		finally
+		{
+			GracefulExit.exit(success ? 0 : 1);
+		}
+	}
+
+	/**
+	 * Runs a single shutdown cleanup step, logging and swallowing any failure so
+	 * that later steps and the exit itself still happen.
+	 *
+	 * @param description what the step does, used in the failure message
+	 * @param step the cleanup action to run
+	 */
+	private static void runCleanupStep(String description, Runnable step)
+	{
+		try
+		{
+			step.run();
+		}
+		catch (Throwable t)
+		{
+			Logging.errorPrint("Shutdown step failed, continuing: " + description, t);
+		}
 	}
 
 	private static void initPrintPreviewFonts()
 	{
 		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-		String fontDir = ConfigurationSettings.getOutputSheetsDir() + File.separator + "fonts" + File.separator
-			+ "NotoSans" + File.separator;
+		Path fontDir = Path.of(ConfigurationSettings.getOutputSheetsDir(), "fonts", "NotoSans");
 		try
 		{
-			ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, new File(fontDir + "NotoSans-Regular.ttf")));
-			ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, new File(fontDir + "NotoSans-Bold.ttf")));
-			ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, new File(fontDir + "NotoSans-Italic.ttf")));
-			ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, new File(fontDir + "NotoSans-BoldItalic.ttf")));
+			ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, fontDir.resolve("NotoSans-Regular.ttf").toFile()));
+			ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, fontDir.resolve("NotoSans-Bold.ttf").toFile()));
+			ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, fontDir.resolve("NotoSans-Italic.ttf").toFile()));
+			ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, fontDir.resolve("NotoSans-BoldItalic.ttf").toFile()));
 		}
 		catch (IOException | FontFormatException ex)
 		{

@@ -59,6 +59,7 @@ import pcgen.core.display.CharacterDisplay;
 import pcgen.core.pclevelinfo.PCLevelInfo;
 import pcgen.core.spell.Spell;
 import pcgen.core.system.LoadInfo;
+import pcgen.core.term.PCCasterLevelClassTermEvaluator;
 import pcgen.gui2.UIPropertyContext;
 import pcgen.io.exporttoken.StatToken;
 import pcgen.persistence.lst.SimpleLoader;
@@ -79,7 +80,7 @@ import util.TestURI;
  * The Class {@code PlayerCharacterTest} is responsible for testing
  * that PlayerCharacter is working correctly.
  */
-public class PlayerCharacterTest extends AbstractCharacterTestCase
+class PlayerCharacterTest extends AbstractCharacterTestCase
 {
 	Race giantRace = null;
 	PCClass giantClass = null;
@@ -265,7 +266,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	
 
 	@Test
-	public void testGetBonusFeatsForNewLevel1() throws Exception
+	void testGetBonusFeatsForNewLevel1() throws Exception
 	{
 		readyToRun();
 		final PlayerCharacter character = new PlayerCharacter();
@@ -276,7 +277,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	}
 
 	@Test
-	public void testGetBonusFeatsForNewLevel3() throws Exception
+	void testGetBonusFeatsForNewLevel3() throws Exception
 	{
 		readyToRun();
 		final PlayerCharacter character = new PlayerCharacter();
@@ -287,12 +288,208 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	}
 
 	/**
+	/**
+	 * BONUS:CASTERLEVEL|ALLSPELLS|x raises the effective caster level of every
+	 * spell of every casting class.
+	 */
+	@Test
+	void testCasterLevelAllSpellsBonus() throws Exception
+	{
+		readyToRun();
+
+		final Spell spell = new Spell();
+		spell.setName("Test Arcane Spell");
+		final CharacterSpell charSpell = new CharacterSpell(pcClass, spell);
+
+		// Without the bonus, effective caster level equals class level.
+		final PlayerCharacter baseChar = new PlayerCharacter();
+		baseChar.setRace(human);
+		baseChar.incrementClassLevel(3, pcClass, true);
+		baseChar.calcActiveBonuses();
+		final int base = baseChar.getTotalCasterLevelWithSpellBonus(charSpell, spell,
+			pcClass.getSpellType(), pcClass.getKeyName(), 3);
+		assertEquals(3, base, "Base effective caster level should equal class level");
+
+		// Grant BONUS:CASTERLEVEL|ALLSPELLS|3 via the race, then build a PC.
+		final BonusObj allSpells = Bonus.newBonus(Globals.getContext(), "CASTERLEVEL|ALLSPELLS|3");
+		human.addToListFor(ListKey.BONUS, allSpells);
+		human.ownBonuses(human);
+
+		final PlayerCharacter character = new PlayerCharacter();
+		character.setRace(human);
+		character.incrementClassLevel(3, pcClass, true);
+		character.calcActiveBonuses();
+
+		final int boosted = character.getTotalCasterLevelWithSpellBonus(charSpell, spell,
+			pcClass.getSpellType(), pcClass.getKeyName(), 3);
+		assertEquals(6, boosted,
+			"BONUS:CASTERLEVEL|ALLSPELLS|3 should add 3 to the spell's effective caster level");
+	}
+
+	/**
+	 * BONUS:CASTERLEVEL|ALLSPELLS with a negative value lowers effective caster
+	 * level (e.g. the Moon Circlet).
+	 */
+	@Test
+	void testCasterLevelAllSpellsNegativeBonus() throws Exception
+	{
+		readyToRun();
+
+		final BonusObj allSpells = Bonus.newBonus(Globals.getContext(), "CASTERLEVEL|ALLSPELLS|-2");
+		human.addToListFor(ListKey.BONUS, allSpells);
+		human.ownBonuses(human);
+
+		final PlayerCharacter character = new PlayerCharacter();
+		character.setRace(human);
+		character.incrementClassLevel(5, pcClass, true);
+		character.calcActiveBonuses();
+
+		final Spell spell = new Spell();
+		spell.setName("Test Arcane Spell Neg");
+		final CharacterSpell charSpell = new CharacterSpell(pcClass, spell);
+
+		final int result = character.getTotalCasterLevelWithSpellBonus(charSpell, spell,
+			pcClass.getSpellType(), pcClass.getKeyName(), 5);
+		assertEquals(3, result,
+			"A negative BONUS:CASTERLEVEL|ALLSPELLS should reduce the effective caster level");
+	}
+
+	/**
+	 * BONUS:PCLEVEL|TYPE.Arcane raises the caster level of every Arcane
+	 * spellcasting class (e.g. the "+1 Arcane Caster Level" GM Award).
+	 */
+	@Test
+	void testCasterLevelArcaneTypeBonus() throws Exception
+	{
+		readyToRun();
+
+		// Give the (Arcane, see setUp) class a fixed caster level of 3 so the
+		// evaluator has a nonzero base to add the TYPE bonus onto.
+		final PCClass arcaneClass = new PCClass();
+		arcaneClass.setName("ArcaneTypeClass");
+		BuildUtilities.setFact(arcaneClass, "SpellType", "Arcane");
+		arcaneClass.addToListFor(ListKey.BONUS,
+			Bonus.newBonus(Globals.getContext(), "CASTERLEVEL|ArcaneTypeClass|3"));
+		Globals.getContext().getReferenceContext().importObject(arcaneClass);
+
+		final Spell spell = new Spell();
+		spell.setName("Test Arcane Spell CL");
+		final CharacterSpell charSpell = new CharacterSpell(arcaneClass, spell);
+		final PCCasterLevelClassTermEvaluator eval = new PCCasterLevelClassTermEvaluator(
+			"CASTERLEVEL.CLASS." + arcaneClass.getKeyName(), arcaneClass.getKeyName());
+
+		// Baseline: fixed caster level 3, no PCLEVEL|TYPE bonus.
+		final PlayerCharacter baseChar = new PlayerCharacter();
+		baseChar.setRace(human);
+		baseChar.incrementClassLevel(1, arcaneClass, true);
+		baseChar.calcActiveBonuses();
+		assertEquals(3, eval.resolve(baseChar, charSpell).intValue(),
+			"Baseline caster level should be the class's fixed CASTERLEVEL of 3");
+
+		// Grant BONUS:PCLEVEL|TYPE.Arcane|1 via the race.
+		human.addToListFor(ListKey.BONUS, Bonus.newBonus(Globals.getContext(), "PCLEVEL|TYPE.Arcane|1"));
+		human.ownBonuses(human);
+
+		final PlayerCharacter character = new PlayerCharacter();
+		character.setRace(human);
+		character.incrementClassLevel(1, arcaneClass, true);
+		character.calcActiveBonuses();
+
+		assertEquals(4, eval.resolve(character, charSpell).intValue(),
+			"BONUS:PCLEVEL|TYPE.Arcane|1 should raise the Arcane class's caster level by 1 (3 + 1)");
+	}
+
+	/**
+	 * BONUS:CASTERLEVEL|TYPE.Arcane raises caster level ONLY, while
+	 * BONUS:PCLEVEL|TYPE.Arcane raises BOTH caster level and spell progression
+	 * (highest castable spell level), per globalfilesbonus.html. A
+	 * caster-level-only award belongs on CASTERLEVEL; the fix must nonetheless
+	 * honor PCLEVEL, which the shipped GM Award data uses.
+	 */
+	@Test
+	void testCasterLevelVsPcLevelProgression() throws Exception
+	{
+		final LoadContext context = Globals.getContext();
+
+		// An arcane caster with a fixed CASTERLEVEL of 5 (so the caster-level
+		// evaluator has a solid base) whose CAST progression grants 2nd-level
+		// spells only at class level 2 -- so cast@2 == 0 at level 1 is the
+		// observable "spell progression" signal that a +1 effective level flips.
+		final PCClass caster = new PCClass();
+		caster.setName("VerifyCaster");
+		BuildUtilities.setFact(caster, "SpellType", "Arcane");
+		context.unconditionallyProcess(caster, "SPELLSTAT", "CHA");
+		caster.put(ObjectKey.SPELLBOOK, false);
+		caster.put(ObjectKey.MEMORIZE_SPELLS, false);
+		caster.addToListFor(ListKey.BONUS, Bonus.newBonus(context, "CASTERLEVEL|VerifyCaster|5"));
+		context.unconditionallyProcess(caster.getOriginalClassLevel(1), "CAST", "3,1");
+		context.unconditionallyProcess(caster.getOriginalClassLevel(2), "CAST", "3,2,1");
+		context.getReferenceContext().importObject(caster);
+		readyToRun();
+
+		final String sbook = Globals.getDefaultSpellBook();
+		final Spell spell = new Spell();
+		spell.setName("Verify Arcane Spell");
+		final CharacterSpell charSpell = new CharacterSpell(caster, spell);
+		final PCCasterLevelClassTermEvaluator eval = new PCCasterLevelClassTermEvaluator(
+			"CASTERLEVEL.CLASS." + caster.getKeyName(), caster.getKeyName());
+
+		final int baseCl = measureCasterLevel(caster, eval, charSpell);
+		final int baseCast2 = measureCastAtLevel2(caster, sbook);
+
+		// --- CASTERLEVEL|TYPE.Arcane|1 : expect CL +1, progression UNCHANGED ---
+		final BonusObj clBonus = Bonus.newBonus(context, "CASTERLEVEL|TYPE.Arcane|1");
+		human.addToListFor(ListKey.BONUS, clBonus);
+		human.ownBonuses(human);
+		final int clCl = measureCasterLevel(caster, eval, charSpell);
+		final int clCast2 = measureCastAtLevel2(caster, sbook);
+		human.removeFromListFor(ListKey.BONUS, clBonus);
+		human.ownBonuses(human);
+
+		// --- PCLEVEL|TYPE.Arcane|1 : expect CL +1 AND progression +1 ---
+		final BonusObj pcBonus = Bonus.newBonus(context, "PCLEVEL|TYPE.Arcane|1");
+		human.addToListFor(ListKey.BONUS, pcBonus);
+		human.ownBonuses(human);
+		final int pcCl = measureCasterLevel(caster, eval, charSpell);
+		final int pcCast2 = measureCastAtLevel2(caster, sbook);
+		human.removeFromListFor(ListKey.BONUS, pcBonus);
+		human.ownBonuses(human);
+
+		// CASTERLEVEL: caster level rose by 1, spell progression did NOT change.
+		assertEquals(baseCl + 1, clCl, "CASTERLEVEL|TYPE.Arcane should raise caster level by 1");
+		assertEquals(baseCast2, clCast2, "CASTERLEVEL|TYPE.Arcane must NOT change spell progression");
+
+		// PCLEVEL: caster level rose by 1 AND spell progression increased.
+		assertEquals(baseCl + 1, pcCl, "PCLEVEL|TYPE.Arcane should raise caster level by 1");
+		assertTrue(pcCast2 > baseCast2, "PCLEVEL|TYPE.Arcane also raises spell progression");
+	}
+
+	private int measureCasterLevel(PCClass caster, PCCasterLevelClassTermEvaluator eval, CharacterSpell charSpell)
+	{
+		final PlayerCharacter pc = new PlayerCharacter();
+		pc.setRace(human);
+		pc.incrementClassLevel(1, caster, true);
+		pc.calcActiveBonuses();
+		return eval.resolve(pc, charSpell).intValue();
+	}
+
+	private int measureCastAtLevel2(PCClass caster, String sbook)
+	{
+		final PlayerCharacter pc = new PlayerCharacter();
+		pc.setRace(human);
+		pc.incrementClassLevel(1, caster, true);
+		pc.calcActiveBonuses();
+		final PCClass held = pc.getClassKeyed(caster.getKeyName());
+		return pc.getSpellSupport(held).getCastForLevel(2, sbook, true, false, pc);
+	}
+
+	/**
 	 * Test bonus monster feats where there default monster mode is off.
-	 * Note: As PCClass grants feats which do not exist, the feat pool gets 
+	 * Note: As PCClass grants feats which do not exist, the feat pool gets
 	 * incremented instead.
 	 */
 	@Test
-	public void testGetMonsterBonusFeatsForNewLevel1()
+	void testGetMonsterBonusFeatsForNewLevel1()
 	{
 		readyToRun();
 		final PlayerCharacter character = new PlayerCharacter();
@@ -316,7 +513,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * Test level per feat bonus to feats. 
 	 */
 	@Test
-	public void testGetNumFeatsFromLevels()
+	void testGetNumFeatsFromLevels()
 	{
 		readyToRun();
 		final PlayerCharacter pc = new PlayerCharacter();
@@ -349,7 +546,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * leveltypes or within standard progression.
 	 */
 	@Test
-	public void testGetMonsterBonusFeatsForNewLevel2()
+	void testGetMonsterBonusFeatsForNewLevel2()
 	{
 		readyToRun();
 		final PlayerCharacter pc = new PlayerCharacter();
@@ -380,7 +577,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * Tests getVariableValue.
 	 */
 	@Test
-	public void testGetVariableValue1()
+	void testGetVariableValue1()
 	{
 		readyToRun();
 		LoadContext context = Globals.getContext();
@@ -411,7 +608,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * Tests getVariableValue for stat modifier.
 	 */
 	@Test
-	public void testGetVariableValueStatMod()
+	void testGetVariableValueStatMod()
 	{
 		readyToRun();
 		//Logging.setDebugMode(true);
@@ -429,7 +626,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	}
 
 	@Test
-	public void testGetVariableValueStatModNew()
+	void testGetVariableValueStatModNew()
 	{
 		readyToRun();
 		//Logging.setDebugMode(true);
@@ -450,7 +647,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * Test out the caching of variable values.
 	 */
 	@Test
-	public void testGetVariableCaching()
+	void testGetVariableCaching()
 	{
 		readyToRun();
 		final PlayerCharacter character = new PlayerCharacter();
@@ -479,7 +676,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * close mode, only one instance of a feat with a sub-choice is added.
 	 */
 	@Test
-	public void testModFeat()
+	void testModFeat()
 	{
 		readyToRun();
 		final PlayerCharacter character = new PlayerCharacter();
@@ -508,7 +705,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * Test that multiple exotic weapon proficiencies work correctly.
 	 */
 	@Test
-	public void testExoticWpnProf()
+	void testExoticWpnProf()
 	{
 		readyToRun();
 		PlayerCharacter character = new PlayerCharacter();
@@ -541,7 +738,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * Tests CL variable.
 	 */
 	@Test
-	public void testGetClassVar()
+	void testGetClassVar()
 	{
 		readyToRun();
 		//Logging.setDebugMode(true);
@@ -633,7 +830,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * each call retrieves the right set of skills.
 	 */
 	@Test
-	public void testSkillsVisibility()
+	void testSkillsVisibility()
 	{
 		readyToRun();
 		PlayerCharacter pc = getCharacter();
@@ -684,7 +881,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * Tests adding a spell.
 	 */
 	@Test
-	public void testAddSpells()
+	void testAddSpells()
 	{
 		readyToRun();
 		final PlayerCharacter character = new PlayerCharacter();
@@ -796,7 +993,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * memorizes spells.
 	 */
 	@Test
-	public void testAvailableSpellsMemorizedDivine()
+	void testAvailableSpellsMemorizedDivine()
 	{
 		readyToRun();
 		final PlayerCharacter character = new PlayerCharacter();
@@ -916,7 +1113,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	}
 
 	@Test
-	public void testIsNonAbility()
+	void testIsNonAbility()
 	{
 		readyToRun();
 		PlayerCharacter pc = getCharacter();
@@ -961,7 +1158,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * categories.
 	 */
 	@Test
-	public void testStackDifferentAbiltyCat()
+	void testStackDifferentAbiltyCat()
 	{
 		readyToRun();
 		PlayerCharacter pc = getCharacter();
@@ -998,7 +1195,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * Verify that bested abilities are processed correctly.
 	 */
 	@Test
-	public void testNestedAbilities()
+	void testNestedAbilities()
 	{
 		PlayerCharacter pc = getCharacter();
 		Ability resToAcid =
@@ -1034,7 +1231,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	}
 
 	@Test
-	public void testGetPartialStatFor()
+	void testGetPartialStatFor()
 	{
 		readyToRun();
 		PlayerCharacter pc = getCharacter();
@@ -1072,7 +1269,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * Validate the getAvailableFollowers function.
 	 */
 	@Test
-	public void testGetAvailableFollowers()
+	void testGetAvailableFollowers()
 	{
 		readyToRun();
 		Ability ab = TestHelper.makeAbility("Tester1", BuildUtilities.getFeatCat(), "Empty Container");
@@ -1123,7 +1320,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	}
 
 	@Test
-	public void testGetAggregateAbilityList()
+	void testGetAggregateAbilityList()
 	{
 		Ability resToAcid =
 				TestHelper.makeAbility("Swelter",
@@ -1161,7 +1358,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * Test the processing and order of operations of the adjustMoveRates method.
 	 */
 	@Test
-	public void testAdjustMoveRates()
+	void testAdjustMoveRates()
 	{
 		Ability quickFlySlowSwim =
 				TestHelper.makeAbility("quickFlySlowSwim", BuildUtilities.getFeatCat()
@@ -1217,7 +1414,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	}
 
 	@Test
-	public void testMakeIntoExClass()
+	void testMakeIntoExClass()
 	{
 		// Prepare class and ex-class
 		LoadContext context = Globals.getContext();
@@ -1251,7 +1448,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	}
 
 	@Test
-	public void testGetVariableCachingRollTopNode()
+	void testGetVariableCachingRollTopNode()
 	{
 		readyToRun();
 		final PlayerCharacter character = new PlayerCharacter();
@@ -1280,7 +1477,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * skill pools.
 	 */
 	@Test
-	public void testCheckSkillModChangeNoBonus()
+	void testCheckSkillModChangeNoBonus()
 	{
 		readyToRun();
 		PlayerCharacter character = getCharacter();
@@ -1317,7 +1514,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * Validate the checkSkillModChange correctly handles SKILLPOOL bonuses
 	 */
 	@Test
-	public void testCheckSkillModChangeWithBonus()
+	void testCheckSkillModChangeWithBonus()
 	{
 		readyToRun();
 		PlayerCharacter character = getCharacter();
@@ -1371,7 +1568,7 @@ public class PlayerCharacterTest extends AbstractCharacterTestCase
 	 * TODO Testing at epic levels 21+ needs to be fixed.
 	 */
 	@Test
-	public void testbaseAttackBonusAndgetNumAttacks() throws Exception 
+	void testbaseAttackBonusAndgetNumAttacks() throws Exception 
 	{
 		readyToRun();
 		LoadContext context = Globals.getContext();

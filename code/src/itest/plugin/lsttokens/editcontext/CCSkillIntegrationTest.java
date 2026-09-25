@@ -30,7 +30,7 @@ import plugin.lsttokens.testsupport.CDOMTokenLoader;
 
 import org.junit.jupiter.api.Test;
 
-public class CCSkillIntegrationTest extends
+class CCSkillIntegrationTest extends
 		AbstractListIntegrationTestCase<CDOMObject, Skill>
 {
 
@@ -73,12 +73,6 @@ public class CCSkillIntegrationTest extends
 		return '|';
 	}
 
-	@Test
-	public void dummyTest()
-	{
-		// Just to get Eclipse to recognize this as a JUnit 4.0 Test Case
-	}
-
 	@Override
 	public boolean isClearDotLegal()
 	{
@@ -104,7 +98,7 @@ public class CCSkillIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinAddList() throws PersistenceLayerException
+	void testRoundRobinAddList() throws PersistenceLayerException
 	{
 		construct(primaryContext, "TestWP1");
 		construct(secondaryContext, "TestWP1");
@@ -116,7 +110,7 @@ public class CCSkillIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinDotClearDotList()
+	void testRoundRobinDotClearDotList()
 			throws PersistenceLayerException
 	{
 		construct(primaryContext, "TestWP1");
@@ -131,7 +125,7 @@ public class CCSkillIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinStartList() throws PersistenceLayerException
+	void testRoundRobinStartList() throws PersistenceLayerException
 	{
 		construct(primaryContext, "TestWP2");
 		construct(secondaryContext, "TestWP2");

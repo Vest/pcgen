@@ -67,7 +67,7 @@ import pcgen.util.enumeration.Visibility;
  * 
  */
 public class AbilityCategory
-		implements Category<Ability>, Loadable, ManufacturableFactory<Ability>
+		implements Category<Ability>, ManufacturableFactory<Ability>
 {
 	private static final ClassIdentity<AbilityCategory> IDENTITY =
 			BasicClassIdentity.getIdentity(AbilityCategory.class);
@@ -755,7 +755,7 @@ public class AbilityCategory
 			{
 				for (Type type : types)
 				{
-					if (ability.isType(type.toString()))
+					if (ability.isType(type))
 					{
 						use = true;
 						break;

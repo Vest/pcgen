@@ -10,36 +10,21 @@ It supports numerous game systems, most notably:
 - Starfinder
 
 # Table of Contents
-1. [Installing From Release 6.08](#installing-from-release-608)
+1. [Installing PCGen](#installing-pcgen)
 
-2. [Installing From Release 6.09 (Alpha)](#installing-from-release-609-alpha)
+2. [PCGen Needs You](#pcgen-needs-you)
 
-3. [PCGen Needs You](#pcgen-needs-you)
+3. [The Old Wiki](#the-old-wiki)
 
-4. [The Old Wiki](#the-old-wiki)
+4. [PCGen LST Tutorial](#pcgen-lst-tutorial)
 
-5. [PCGen LST Tutorial](#pcgen-lst-tutorial)
+5. [Basic Workflow](#basic-workflow)
 
-6. [Basic Workflow](#basic-workflow)
+6. [Development Setup](#development-setup)
 
-7. [Development Setup](#development-setup)
+7. [Essential Gradle Tasks](#essential-gradle-tasks)
 
-8. [Essential Gradle Tasks](#essential-gradle-tasks)
-
-# Installing From Release 6.08
-1. Install Java.
-   - JDK 11 is recommended and has long term support, later versions should also work. 10 and below are not supported.
-   - To check if you have Java installed, see [Install Java](#install-java)
-   - If you don't have it already, you can get it from [Eclipse Temurin](https://adoptium.net/temurin/releases/?version=11).
-   
-2. Download and extract the full zip file from https://github.com/PCGen/pcgen/releases/latest.
-
-3. You should now be able to run PCGen. The exact invocation depends on your operating system, but you should be able to either double-click to launch the file for your platform.
-    - Windows: `pcgen.exe` (`pcgen.bat` for command-line users)
-    - Linux: `pcgen.sh` 
-    - Mac: `pcgen.jar` (or `pcgen.dmg` if it exists)
-    
-# Installing From Release 6.09 (Alpha)
+# Installing PCGen
 > Note: Java does not need to be preinstalled with PcGen >6.09.05
 
 ## Using Zip bundle
@@ -111,8 +96,7 @@ Check the installed version with:
 
     java -version
 
-For 6.08 development you will want Java with a minimum version of 11.
-For 6.09 development you will want Java with a minimum version of 25.
+For development you will want Java with a minimum version of 25.
 You can install the latest version from [Eclipse Temurin](https://adoptium.net) regardless of your OS, please see instructions there.
 
 ### Install Git
@@ -263,6 +247,16 @@ create a run configuration using Gradle and have the command be `run`. This shou
 
 If you want to debug in Intellij, using the `Main` configuration and run it in debug mode.
 You can change the Java version to whatever version is supported, and you have installed.
+
+#### JavaFX / graphics toolkit fails to start on Linux
+
+If PCGen exits at startup with an error `UnsatisfiedLinkError: no glassgtk3 in java.library.path`, it means that JavaFX
+cannot find the linked file `libgthread-2.0.so.0`. To solve it, the missing package must be installed:
+
+- **openSUSE Tumbleweed:** `sudo zypper install libgthread-2_0-0`
+- **Other distributions:** install the glib package that provides `libgthread-2.0.so.0` (the exact package name varies).
+
+If instead the error is `Unable to open DISPLAY`, run PCGen from a graphical desktop session rather than a remote/SSH shell.
 
 
 [PCGen]: https://github.com/PCGen/pcgen

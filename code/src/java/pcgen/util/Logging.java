@@ -18,21 +18,25 @@
 package pcgen.util;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.text.MessageFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import pcgen.core.SettingsHandler;
 import pcgen.rules.context.LoadContext;
@@ -73,23 +77,38 @@ public final class Logging
 	private static Logger pcgenLogger = Logger.getLogger("pcgen");
 	private static Logger pluginLogger = Logger.getLogger("plugin");
 
+	/** Walks the stack lazily to name loggers after the calling class. */
+	private static final StackWalker WALKER = StackWalker.getInstance();
+
+	/** This facade's own class name, skipped when inferring the caller. */
+	private static final String CLASS_NAME = Logging.class.getName();
+
+	/** System property java.util.logging consults for its configuration file. */
+	private static final String CONFIG_FILE_PROPERTY = "java.util.logging.config.file";
+
+	/** Name of PCGen's java.util.logging configuration file. */
+	private static final String LOGGING_PROPERTIES = "logging.properties";
+
+	/** Directory jpackage places beside {@code runtime} to hold bundled resources. */
+	private static final String BUNDLE_APP_DIR = "app";
+
+	/** Directory levels searched upwards from java.home for the configuration file. */
+	private static final int MAX_ANCESTORS = 6;
+
+	/** Appends the source of a logged issue: {@code <message> (Source: <uri>)}. */
+	private static final String SOURCE_FORMAT = "{0} (Source: {1})";
+
 	/**
 	 * Do any required initialization of the Logger.
 	 */
 	static
 	{
 		// Set a default configuration file if none was specified.
-		Properties p = System.getProperties();
-		File propsFile = new File(SystemUtils.USER_DIR + File.separator + "logging.properties");
-		if (!propsFile.exists())
+		if (System.getProperty(CONFIG_FILE_PROPERTY) == null)
 		{
-			propsFile = new File("logging.properties");
+			findLoggingConfig(SystemUtils.USER_DIR, SystemUtils.JAVA_HOME)
+					.ifPresent(p -> System.setProperty(CONFIG_FILE_PROPERTY, p.toAbsolutePath().toString()));
 		}
-		if (propsFile.exists() && null == p.get("java.util.logging.config.file"))
-		{
-			p.put("java.util.logging.config.file", propsFile.getAbsolutePath());
-		}
-		//System.out.println("Using log settings from " + propsFile.getAbsolutePath());
 
 		// Get Java Logging to read in the config.
 		try
@@ -101,6 +120,40 @@ public final class Logging
 			System.err.println("Failed to read logging configuration. Error was:");
 			e.printStackTrace();
 		}
+	}
+
+	/**
+	 * Locates {@code logging.properties}: working directory first, then the
+	 * install directory derived from java.home for packaged launches (where the
+	 * working directory is {@code /}).
+	 *
+	 * @param userDir the working directory, may be null
+	 * @param javaHome the runtime's home directory, may be null
+	 * @return the configuration file, or empty if there is none to be found
+	 */
+	static Optional<Path> findLoggingConfig(String userDir, String javaHome)
+	{
+		return candidateConfigDirs(userDir, javaHome)
+				.map(dir -> dir.resolve(LOGGING_PROPERTIES))
+				.filter(Files::isRegularFile)
+				.findFirst();
+	}
+
+	private static Stream<Path> candidateConfigDirs(String userDir, String javaHome)
+	{
+		Stream<Path> workingDir = (userDir == null) ? Stream.empty() : Stream.of(Path.of(userDir));
+		if (javaHome == null)
+		{
+			return workingDir;
+		}
+		// Walk up from java.home checking each dir and its "app" sibling, which
+		// covers every jpackage layout; macOS (<install>/runtime/Contents/Home)
+		// is the deepest and sets MAX_ANCESTORS.
+		Stream<Path> installDirs = Stream
+				.iterate(Path.of(javaHome).toAbsolutePath(), Objects::nonNull, Path::getParent)
+				.limit(MAX_ANCESTORS)
+				.flatMap(dir -> Stream.of(dir, dir.resolve(BUNDLE_APP_DIR)));
+		return Stream.concat(workingDir, installDirs);
 	}
 
 	private Logging()
@@ -263,7 +316,7 @@ public final class Logging
 		{
 			if (context != null && context.getSourceURI() != null)
 			{
-				l.log(LST_WARNING, s + " (Source: " + context.getSourceURI() + " )");
+				l.log(LST_WARNING, MessageFormat.format(SOURCE_FORMAT, s, context.getSourceURI()));
 			}
 			else
 			{
@@ -284,7 +337,7 @@ public final class Logging
 		{
 			if (context != null && context.getSourceURI() != null)
 			{
-				l.log(lvl, " (Source: " + context.getSourceURI() + " )");
+				l.log(lvl, MessageFormat.format(SOURCE_FORMAT, "", context.getSourceURI()));
 			}
 			else
 			{
@@ -305,7 +358,7 @@ public final class Logging
 		{
 			if (sourceUri != null)
 			{
-				l.log(lvl, " (Source: " + sourceUri + ')');
+				l.log(lvl, MessageFormat.format(SOURCE_FORMAT, "", sourceUri));
 			}
 			else
 			{
@@ -353,7 +406,7 @@ public final class Logging
 		{
 			if (context != null && context.getSourceURI() != null)
 			{
-				l.log(ERROR, s + " (Source: " + context.getSourceURI() + " )");
+				l.log(ERROR, MessageFormat.format(SOURCE_FORMAT, s, context.getSourceURI()));
 			}
 			else
 			{
@@ -375,7 +428,7 @@ public final class Logging
 		{
 			if (sourceURI != null)
 			{
-				l.log(ERROR, s + " (Source: " + sourceURI + " )");
+				l.log(ERROR, MessageFormat.format(SOURCE_FORMAT, s, sourceURI));
 			}
 			else
 			{
@@ -497,35 +550,17 @@ public final class Logging
 	 *
 	 * @return An instance of Logger that deals with the specified name.
 	 */
-	private static java.util.logging.Logger getLogger()
+	private static Logger getLogger()
 	{
-		StackTraceElement[] stack = new Throwable().getStackTrace();
-		StackTraceElement caller = null;
-
-		for (int i = 1; i < stack.length; i++) //1 to skip this method
-		{
-			if (!"pcgen.util.Logging".equals(stack[i].getClassName()))
-			{
-				caller = stack[i];
-				break;
-			}
-		}
-		// name The name of the logger
-		String name = (caller == null) ? "<null>" : caller.getClassName();
-
-		Logger l = null;
-		final int maxRetries = 15;
-		int retries = 0;
-		while (l == null && retries < maxRetries)
-		{
-			l = java.util.logging.Logger.getLogger(name);
-			retries++;
-		}
-		if (l == null)
-		{
-			System.err.println("Unable to get logger for " + name + " after " + retries + " atempts.");
-		}
-		return l;
+		// Walk lazily to the first frame outside this facade instead of
+		// materialising a whole stack trace on every log call.
+		String name = WALKER.walk(frames -> frames
+				.map(StackWalker.StackFrame::getClassName)
+				.filter(className -> !CLASS_NAME.equals(className))
+				.findFirst())
+				.orElse("<null>");
+		// Logger.getLogger never returns null; it creates the logger if absent.
+		return Logger.getLogger(name);
 	}
 
 	/**

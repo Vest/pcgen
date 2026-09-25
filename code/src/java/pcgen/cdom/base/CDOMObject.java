@@ -31,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -66,16 +67,17 @@ import pcgen.core.PlayerCharacter;
 import pcgen.core.analysis.BonusActivation;
 import pcgen.core.bonus.BonusObj;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 public abstract class CDOMObject extends ConcretePrereqObject
-		implements Cloneable, BonusContainer, Loadable, Reducible, PCGenScoped, VarHolder,
-		VarContainer
+		implements BonusContainer, Loadable, Reducible, PCGenScoped, VarHolder
 {
 
 	public static final Comparator<CDOMObject> P_OBJECT_COMP =
 			(o1, o2) -> o1.getKeyName().compareToIgnoreCase(o2.getKeyName());
+	// For single-threaded sorting it is safe and efficient to keep the Collator as a shared instance.
+	private static final Collator NAME_COLLATOR = Collator.getInstance();
 	public static final Comparator<CDOMObject> P_OBJECT_NAME_COMP = (o1, o2) -> {
-		final Collator collator = Collator.getInstance();
-
 		// Check sort keys first
 		String key1 = o1.get(StringKey.SORT_KEY);
 		if (key1 == null)
@@ -89,14 +91,14 @@ public abstract class CDOMObject extends ConcretePrereqObject
 		}
 		if (!key1.equals(key2))
 		{
-			return collator.compare(key1, key2);
+			return NAME_COLLATOR.compare(key1, key2);
 		}
 		if (!o1.getDisplayName().equals(o2.getDisplayName()))
 		{
-			return collator.compare(o1.getDisplayName(), o2.getDisplayName());
+			return NAME_COLLATOR.compare(o1.getDisplayName(), o2.getDisplayName());
 		}
 		// Fall back to keyname if the displayname is the same
-		return collator.compare(o1.getKeyName(), o2.getKeyName());
+		return NAME_COLLATOR.compare(o1.getKeyName(), o2.getKeyName());
 	};
 	/**
 	 * The source URI for this CDOMObject.
@@ -827,43 +829,43 @@ public abstract class CDOMObject extends ConcretePrereqObject
 		{
 			return false;
 		}
-		if (integerChar == null ? cdo.integerChar != null : !integerChar.equals(cdo.integerChar))
+		if (!Objects.equals(integerChar, cdo.integerChar))
 		{
 			// System.err.println("CDOM Inequality Integer");
 			// System.err.println(integerChar + " " + cdo.integerChar);
 			return false;
 		}
-		if (stringChar == null ? cdo.stringChar != null : !stringChar.equals(cdo.stringChar))
+		if (!Objects.equals(stringChar, cdo.stringChar))
 		{
 			// System.err.println("CDOM Inequality String");
 			// System.err.println(stringChar + " " + cdo.stringChar);
 			return false;
 		}
-		if (formulaChar == null ? cdo.formulaChar != null : !formulaChar.equals(cdo.formulaChar))
+		if (!Objects.equals(formulaChar, cdo.formulaChar))
 		{
 			// System.err.println("CDOM Inequality Formula");
 			// System.err.println(formulaChar + " " + cdo.formulaChar);
 			return false;
 		}
-		if (variableChar == null ? cdo.variableChar != null : !variableChar.equals(cdo.variableChar))
+		if (!Objects.equals(variableChar, cdo.variableChar))
 		{
 			// System.err.println("CDOM Inequality Variable");
 			// System.err.println(variableChar + " " + cdo.variableChar);
 			return false;
 		}
-		if (objectChar == null ? cdo.objectChar != null : !objectChar.equals(cdo.objectChar))
+		if (!Objects.equals(objectChar, cdo.objectChar))
 		{
 			// System.err.println("CDOM Inequality Object");
 			// System.err.println(objectChar + " " + cdo.objectChar);
 			return false;
 		}
-		if (factChar == null ? cdo.factChar != null : !factChar.equals(cdo.factChar))
+		if (!Objects.equals(factChar, cdo.factChar))
 		{
 			// System.err.println("CDOM Inequality Object");
 			// System.err.println(objectChar + " " + cdo.objectChar);
 			return false;
 		}
-		if (listChar == null ? cdo.listChar != null : !listChar.equals(cdo.listChar))
+		if (!Objects.equals(listChar, cdo.listChar))
 		{
 			//			 System.err.println("CDOM Inequality List");
 			//			 System.err.println(listChar + " " + cdo.listChar);
@@ -871,11 +873,11 @@ public abstract class CDOMObject extends ConcretePrereqObject
 			//			 + cdo.listChar.getKeySet());
 			return false;
 		}
-		if (mapChar == null ? cdo.mapChar != null : !mapChar.equals(cdo.mapChar))
+		if (!Objects.equals(mapChar, cdo.mapChar))
 		{
 			return false;
 		}
-		return cdomListMods == null ? cdo.cdomListMods == null : cdomListMods.equals(cdo.cdomListMods);
+		return Objects.equals(cdomListMods, cdo.cdomListMods);
 	}
 
 	public final <T extends CDOMObject> void putToList(CDOMReference<? extends CDOMList<?>> listRef,
@@ -1032,6 +1034,10 @@ public abstract class CDOMObject extends ConcretePrereqObject
 		}
 	}
 
+	@SuppressFBWarnings(value = "MC_OVERRIDABLE_METHOD_CALL_IN_CLONE",
+		justification = "ownBonuses is intentionally overridable: PCClass overrides it to "
+			+ "recursively re-own bonuses on its PCClassLevel children. The override only "
+			+ "reads the clone's BONUS list, which super.clone() already populated.")
 	@Override
 	public CDOMObject clone() throws CloneNotSupportedException
 	{

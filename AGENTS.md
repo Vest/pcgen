@@ -113,11 +113,19 @@ Batch export path exists in Main.startupWithoutGUI(). Tests demonstrate usage in
 
 Conventions/gotchas observed:
 - Use `GracefulExit.exit` instead of `System.exit` (Checkstyle enforces via RegexpMultiline).
+- Logging goes through `pcgen.util.Logging`; `Logging.errorPrint(...)` is the idiom for SEVERE (`Logging.ERROR == Level.SEVERE`), not `Logging.log(Level.SEVERE, ...)`.
+- `logging.properties` (repo root) configures java.util.logging and is what wires up `SourceLogFormatter` and the `LoggingRecorder`.
+- `SourceLogFormatter` takes its timestamp from `record.getInstant()` (local time with offset) and prints the originating thread as `name#id`.
+- `Main.shutdown(boolean)` isolates every cleanup step via `runCleanupStep` and calls `GracefulExit.exit` from a `finally`. Keep it that way: the main window is already disposed when it runs, so an escaping exception leaves a windowless JVM alive with settings unsaved. Inside `shutdown`, pass **lambdas** rather than method references — a bound method reference dereferences its receiver, and a static one resolves its class, at reference-creation time, i.e. outside the guard.
+- `GracefulExit.getExitFunction()` pairs with `registerExitFunction` so callers/tests can save and restore the exit behaviour.
+- User-facing paths use the single `PCGenSettings.USER_DIR_NAME` constant (`"PCGen"`); don't re-spell the folder name inline. Note the codebase still has unrelated `~/.pcgen` and `~/Library/Preferences/pcgen` locations in `Globals`. New character saves honour the freedesktop documents folder on Linux (`PCGenSettings.defaultCharactersDir` reads `XDG_DOCUMENTS_DIR` / `user-dirs.dirs`); other application data is not XDG-base-dir compliant.
+- Create directory trees with `Files.createDirectories`/`mkdirs`, not `mkdir` — the default character save dir is two levels deep (`<home>/PCGen/characters`) and its parent is absent on a first run.
 - Java version and JavaFX are tightly coupled to `project.ext.javaVersion` (25). Tests and run tasks add the needed JavaFX modules explicitly.
 - Source sets are nonstandard (itest, slowtest, testcommon); when adding new tests, place them in the correct source set to be picked up by the corresponding Gradle task.
 - Plugins are built from compiled classes into plugin jars via tasks in code/gradle/plugins.gradle; main jar depends on `jarAllPlugins`.
 - Some ivy/maven repos are over HTTP (`allowInsecureProtocol true`). Do not change without coordinating with maintainers.
 - Gradle configuration cache is enabled — tasks that are not compatible should declare `notCompatibleWithConfigurationCache(...)`.
+- `./gradlew run` puts the **exploded** `build/classes/java/main` on the classpath, not a jar. Renaming, cleaning or rebuilding the project directory while the app is running yanks not-yet-loaded classes out from under the live JVM, surfacing as a puzzling `NoClassDefFoundError` for whichever class happens to load next. Not a code bug — don't chase it as one.
 
 ## Build/Release Flow
 
@@ -131,6 +139,7 @@ Conventions/gotchas observed:
   - `pcgenReleaseOfficial` (pcgenRelease + updateVersionRelease)
   - `updateVersionToNext` (Groovy helper in `releaseUtils.groovy` that bumps the trailing numeric segment by 1, zero-padded to two digits, and appends `-SNAPSHOT`; used by the manual release workflow's post-build bump step).
 - Artifacts collected into build/release; jpackage produces platform installers under build/jpackage.
+- **Artifact filename convention**: `assembleArtifacts` (`code/gradle/release.gradle`) renames the native installers it copies into `build/release` to mirror the portable zip — `pcgen-<version>-<hostOs>-<hostArch>.<ext>` (e.g. `pcgen-6.09.08.RC1-NIGHTLY.20260624-mac-aarch64.dmg`, `pcgen-6.09.08-windows-x64.exe`, `pcgen-6.09.08-linux-x64.deb`). This is a **filename-only** change: jpackage's *internal* `appVersion` is still the sanitised numeric version (`build.gradle:353`, e.g. `6.09.08`) because dmg/exe/deb require a strictly numeric version. The rename relies on `project.ext.hostOs`/`project.ext.hostArch` published in `build.gradle` (the local `def`s aren't visible to the separately-applied `release.gradle`). Workflows upload `build/release/*` (wildcard), so no workflow changes are needed when this convention changes.
 - Release CI builds on: ubuntu-latest (x64), ubuntu-24.04-arm, macos-latest, windows-latest.
 - CI updates `PCGenProp.properties` with version number and release date at build time (per-platform, in-memory, never committed).
 
@@ -186,6 +195,7 @@ Conventions/gotchas observed:
 | Purpose                         | Path                                                        |
 |---------------------------------|-------------------------------------------------------------|
 | Main entry point                | code/src/java/pcgen/system/Main.java                        |
+| Main/shutdown tests             | code/src/test/pcgen/system/MainTest.java                    |
 | CLI parsing                     | code/src/java/pcgen/system/CommandLineArguments.java        |
 | CLI tests                       | code/src/test/pcgen/system/CommandLineArgumentsTest.java    |
 | GracefulExit                    | code/src/java/pcgen/util/GracefulExit.java                  |
@@ -234,6 +244,7 @@ Conventions/gotchas observed:
 - The `testcommon` source set extends test configurations — changes to test dependencies are automatically available there.
 - Release tag must match `gradle.properties` version exactly (CI validates this).
 - Never re-attach a `Scene` loaded into a `JFXPanel` onto a standalone `Stage`. The embedded scene peer stays bound to the JFXPanel's host and the orphaned `EmbeddedScene` will eventually fire `setPixelScaleFactors` against a null `sceneState`, throwing an NPE in `GlassScene#updateSceneState` on macOS HiDPI displays. Use `PanelFromResource` for top-level dialogs and reserve `JFXPanelFromResource` for Swing embedding only.
+- `ConfigurationSettings.findInstallRoot` must only accept an ancestor or its `app` subdirectory (the jpackage layout), with a bounded climb. Do not widen it to scan every child of every ancestor — that walked to `/` and let a stray `data`+`system` directory (e.g. a checkout under `/tmp`) hijack the install root. See the method Javadoc.
 
 ## Maintainer/Issue Tracking Context
 

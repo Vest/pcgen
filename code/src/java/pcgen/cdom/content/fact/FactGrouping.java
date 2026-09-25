@@ -24,6 +24,8 @@ import pcgen.cdom.formula.PCGenScoped;
 import pcgen.cdom.grouping.GroupingCollection;
 import pcgen.cdom.grouping.GroupingInfo;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 /**
  * A FactGrouping is a GroupingCollection that contains objects of a specific type (e.g.
  * Skill) that contain a specific value in a given FACT
@@ -33,7 +35,7 @@ import pcgen.cdom.grouping.GroupingInfo;
  * @param <F>
  *            The Type of the Fact being checked in this FactGrouping
  */
-public class FactGrouping<T extends CDOMObject, F> implements GroupingCollection<T>
+public final class FactGrouping<T extends CDOMObject, F> implements GroupingCollection<T>
 {
 
 	/**
@@ -78,7 +80,7 @@ public class FactGrouping<T extends CDOMObject, F> implements GroupingCollection
 		{
 			throw new IllegalArgumentException("FactGrouping must have value following =");
 		}
-		if (!fi.getFactName().equalsIgnoreCase(infoKey))
+		if (String.CASE_INSENSITIVE_ORDER.compare(fi.getFactName(), infoKey) != 0)
 		{
 			throw new IllegalArgumentException(
 				"FactGrouping expected grouping type of " + fi.getFactName() + " but it was " + infoKey);
@@ -116,6 +118,8 @@ public class FactGrouping<T extends CDOMObject, F> implements GroupingCollection
 	}
 
 	@Override
+	@SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST",
+		justification = "Only CDOMObject can have facts (per in-code comment); type system can't express this constraint as PCGenScoped is the wider interface")
 	public void process(PCGenScoped o, Consumer<PCGenScoped> consumer)
 	{
 		//Cast can not fail (as only CDOMObject can have facts)

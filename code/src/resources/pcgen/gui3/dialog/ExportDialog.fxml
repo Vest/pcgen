@@ -24,42 +24,47 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.ProgressBar?>
-<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.Scene?>
+
 <Scene xmlns="http://javafx.com/javafx/25.0.1"
        xmlns:fx="http://javafx.com/fxml"
        fx:controller="pcgen.gui3.dialog.ExportDialogController">
     <AnchorPane>
-        <VBox>
-            <HBox>
-                <Label labelFor="$selectCharacterBox" text="Select Character" />
+        <VBox spacing="6.0" AnchorPane.topAnchor="10.0" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0">
+
+            <HBox spacing="6.0" alignment="CENTER_LEFT">
+                <Label labelFor="$selectCharacterBox" text="%in_exportSelectCharacter" />
                 <ComboBox fx:id="selectCharacterBox" />
-                <Label labelFor="$exportSheetType" text="in_entireParty"/>
+
+                <Label labelFor="$entireParty" text="%in_exportEntireParty"/>
                 <CheckBox fx:id="entireParty" />
-                <Label labelFor="$exportSheetType" text="export To"/>
+
+                <Label labelFor="$exportSheetType" text="%in_exportTo"/>
                 <ComboBox fx:id="exportSheetType" />
             </HBox>
-            <TitledPane text="%in_templates" collapsible="false" >
-                <ScrollPane fitToWidth="true">
-                    <ListView fx:id="templateSelect"/>
-                </ScrollPane>
+
+            <!-- vgrow + maxHeight let the list consume free vertical space so the buttons stay pinned at the bottom. -->
+            <TitledPane text="%in_templates" collapsible="false" VBox.vgrow="ALWAYS" maxHeight="Infinity">
+                <ListView fx:id="templateSelect"/>
             </TitledPane>
+
             <BorderPane>
                 <left>
-                    <ProgressBar fx:id="progress" progress="-1" visible="false" />
+                    <ProgressBar fx:id="progress" progress="-1" visible="false" BorderPane.alignment="CENTER" />
                 </left>
                 <right>
-                    <HBox>
+                    <HBox spacing="6.0" alignment="CENTER_RIGHT">
                         <Button fx:id="doExport" text="%in_mnuFileExport" onAction="#doExport"/>
-                        <Button fx:id="doClose" text="%in_mnuClose"  onAction="#doOnClose" />
+                        <Button fx:id="doClose" text="%in_mnuClose" onAction="#doOnClose" />
                     </HBox>
                 </right>
             </BorderPane>
+
         </VBox>
     </AnchorPane>
 </Scene>

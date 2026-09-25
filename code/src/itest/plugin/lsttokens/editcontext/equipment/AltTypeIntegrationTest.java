@@ -29,7 +29,7 @@ import plugin.lsttokens.testsupport.CDOMTokenLoader;
 
 import org.junit.jupiter.api.Test;
 
-public class AltTypeIntegrationTest extends
+class AltTypeIntegrationTest extends
 		AbstractTypeSafeListIntegrationTestCase<Equipment>
 {
 
@@ -66,12 +66,6 @@ public class AltTypeIntegrationTest extends
 		return false;
 	}
 
-	@Test
-	public void dummyTest()
-	{
-		// Just to get Eclipse to recognize this as a JUnit 4.0 Test Case
-	}
-
 	@Override
 	public char getJoinCharacter()
 	{
@@ -91,7 +85,7 @@ public class AltTypeIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinRemove() throws PersistenceLayerException
+	void testRoundRobinRemove() throws PersistenceLayerException
 	{
 		if (requiresPreconstruction())
 		{
@@ -105,7 +99,7 @@ public class AltTypeIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinAddRemove() throws PersistenceLayerException
+	void testRoundRobinAddRemove() throws PersistenceLayerException
 	{
 		if (requiresPreconstruction())
 		{
@@ -120,7 +114,7 @@ public class AltTypeIntegrationTest extends
 
 
 	@Test
-	public void testRoundRobinInsert() throws PersistenceLayerException
+	void testRoundRobinInsert() throws PersistenceLayerException
 	{
 		if (requiresPreconstruction())
 		{

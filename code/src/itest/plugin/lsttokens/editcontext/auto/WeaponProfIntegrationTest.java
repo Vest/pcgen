@@ -32,9 +32,8 @@ import plugin.lsttokens.testsupport.CDOMTokenLoader;
 import plugin.lsttokens.testsupport.TokenRegistration;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
-public class WeaponProfIntegrationTest extends
+class WeaponProfIntegrationTest extends
 		AbstractListIntegrationTestCase<CDOMObject, WeaponProf>
 {
 
@@ -78,12 +77,6 @@ public class WeaponProfIntegrationTest extends
 	public char getJoinCharacter()
 	{
 		return '|';
-	}
-
-	@Test
-	public void dummyTest()
-	{
-		// Just to get Eclipse to recognize this as a JUnit 4.0 Test Case
 	}
 
 	@Override

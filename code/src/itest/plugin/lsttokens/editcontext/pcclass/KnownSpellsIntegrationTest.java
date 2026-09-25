@@ -29,9 +29,8 @@ import plugin.lsttokens.pcclass.KnownspellsToken;
 import plugin.lsttokens.testsupport.CDOMTokenLoader;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
-public class KnownSpellsIntegrationTest extends
+class KnownSpellsIntegrationTest extends
 		AbstractListIntegrationTestCase<PCClass, Spell>
 {
 
@@ -80,12 +79,6 @@ public class KnownSpellsIntegrationTest extends
 	public char getJoinCharacter()
 	{
 		return '|';
-	}
-
-	@Test
-	public void dummyTest()
-	{
-		// Just to get Eclipse to recognize this as a JUnit 4.0 Test Case
 	}
 
 	@Override

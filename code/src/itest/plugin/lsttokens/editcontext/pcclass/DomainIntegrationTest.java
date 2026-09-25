@@ -29,9 +29,8 @@ import plugin.lsttokens.pcclass.DomainToken;
 import plugin.lsttokens.testsupport.CDOMTokenLoader;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
-public class DomainIntegrationTest extends
+class DomainIntegrationTest extends
 		AbstractListIntegrationTestCase<PCClass, Domain>
 {
 
@@ -80,12 +79,6 @@ public class DomainIntegrationTest extends
 	public char getJoinCharacter()
 	{
 		return '|';
-	}
-
-	@Test
-	public void dummyTest()
-	{
-		// Just to get Eclipse to recognize this as a JUnit 4.0 Test Case
 	}
 
 	@Override

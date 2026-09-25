@@ -21,6 +21,7 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -43,9 +44,12 @@ import pcgen.cdom.base.CDOMReference;
 import pcgen.cdom.base.ClassIdentity;
 import pcgen.cdom.base.Loadable;
 import pcgen.cdom.content.RollMethod;
+import pcgen.cdom.enumeration.Type;
 import pcgen.cdom.inst.Dynamic;
 import pcgen.util.Logging;
 import pcgen.util.StringPClassUtil;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * An AbstractReferenceManufacturer is a concrete, but abstract object capable
@@ -64,7 +68,7 @@ import pcgen.util.StringPClassUtil;
 public abstract class AbstractReferenceManufacturer<T extends Loadable> implements ReferenceManufacturer<T>
 {
 
-	private boolean isResolved = false;
+	private volatile boolean isResolved = false;
 
 	private final ManufacturableFactory<T> factory;
 
@@ -169,8 +173,10 @@ public abstract class AbstractReferenceManufacturer<T extends Loadable> implemen
 	 * @throws IllegalArgumentException
 	 *             if the given Class is null or the given Class does not have a
 	 *             public, zero argument constructor
-	 * 
+	 *
 	 */
+	@SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW",
+		justification = "Abstract class; ManufacturableFactory is required and Objects.requireNonNull is the lightest defense against an unusable instance")
 	public AbstractReferenceManufacturer(ManufacturableFactory<T> fac)
 	{
 		if (fac == null)
@@ -319,6 +325,21 @@ public abstract class AbstractReferenceManufacturer<T extends Loadable> implemen
 
 	private boolean resolveGroupReferences()
 	{
+		/*
+		 * Intern each group key's tokens to Type constants once, before the
+		 * per-object loop, so the objects x groups x tokens matching below does
+		 * cheap Type lookups instead of re-interning strings each time.
+		 */
+		Map<FixedStringList, Type[]> internedKeys = new HashMap<>(typeReferences.size());
+		for (FixedStringList key : typeReferences.keySet())
+		{
+			Type[] types = new Type[key.size()];
+			for (int i = 0; i < types.length; i++)
+			{
+				types[i] = Type.getConstant(key.get(i));
+			}
+			internedKeys.put(key, types);
+		}
 		for (T obj : getAllObjects())
 		{
 			if (allRef != null)
@@ -331,7 +352,7 @@ public abstract class AbstractReferenceManufacturer<T extends Loadable> implemen
 				if (trt != null)
 				{
 					boolean typeOkay = true;
-					for (String type : me.getKey())
+					for (Type type : internedKeys.get(me.getKey()))
 					{
 						if (!obj.isType(type))
 						{
@@ -525,6 +546,8 @@ public abstract class AbstractReferenceManufacturer<T extends Loadable> implemen
 	 *            AbstractReferenceManufacturer should be changed
 	 */
 	@Override
+	@SuppressFBWarnings(value = "IMPROPER_UNICODE",
+		justification = "equalsIgnoreCase is locale-independent; null-tolerant on key arg")
 	public void renameObject(String key, T item)
 	{
 		String oldKey = item.getKeyName();
@@ -658,11 +681,11 @@ public abstract class AbstractReferenceManufacturer<T extends Loadable> implemen
 			throw new IllegalArgumentException("= cannot be a in valid single item (perhaps something like TYPE= "
 				+ "is not supported in this token?): " + key);
 		}
-		if (key.equalsIgnoreCase("ANY"))
+		if (String.CASE_INSENSITIVE_ORDER.compare("ANY", key) == 0)
 		{
 			throw new IllegalArgumentException("Any cannot be a valid single item (not supported in this token?)");
 		}
-		if (key.equalsIgnoreCase("ALL"))
+		if (String.CASE_INSENSITIVE_ORDER.compare("ALL", key) == 0)
 		{
 			throw new IllegalArgumentException("All cannot be a valid single item (not supported in this token?)");
 		}
@@ -671,7 +694,7 @@ public abstract class AbstractReferenceManufacturer<T extends Loadable> implemen
 			throw new IllegalArgumentException(": cannot exist in a valid single item (did you try to use a "
 				+ "PRE where it is not supported?) " + key);
 		}
-		if (key.equalsIgnoreCase("%LIST"))
+		if (String.CASE_INSENSITIVE_ORDER.compare("%LIST", key) == 0)
 		{
 			throw new IllegalArgumentException("%LIST cannot be a valid single item (not supported in this token?)");
 		}
@@ -827,7 +850,7 @@ public abstract class AbstractReferenceManufacturer<T extends Loadable> implemen
 			{
 				Logging.errorPrint(activeObj.getClass() + " " + activeObj.getDisplayName() + " has a null KeyName");
 			}
-			else if (!keyName.equalsIgnoreCase(second.toString()))
+			else if (String.CASE_INSENSITIVE_ORDER.compare(keyName, second.toString()) != 0)
 			{
 				Logging.errorPrint(getReferenceDescription() + " Magical Key Change: " + second + " to " + keyName);
 				returnGood = false;

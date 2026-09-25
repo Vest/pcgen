@@ -29,7 +29,7 @@ import plugin.lsttokens.testsupport.CDOMTokenLoader;
 
 import org.junit.jupiter.api.Test;
 
-public class TemplateIntegrationTest extends
+class TemplateIntegrationTest extends
 		AbstractListIntegrationTestCase<CDOMObject, PCTemplate>
 {
 
@@ -72,12 +72,6 @@ public class TemplateIntegrationTest extends
 		return '|';
 	}
 
-	@Test
-	public void dummyTest()
-	{
-		// Just to get Eclipse to recognize this as a JUnit 4.0 Test Case
-	}
-
 	@Override
 	public boolean isClearDotLegal()
 	{
@@ -103,7 +97,7 @@ public class TemplateIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinAddRemove() throws PersistenceLayerException
+	void testRoundRobinAddRemove() throws PersistenceLayerException
 	{
 		construct(primaryContext, "TestWP1");
 		construct(primaryContext, "TestWP2");
@@ -117,7 +111,7 @@ public class TemplateIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinMergeRemove() throws PersistenceLayerException
+	void testRoundRobinMergeRemove() throws PersistenceLayerException
 	{
 		if (isMerge())
 		{
@@ -137,7 +131,7 @@ public class TemplateIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinRemoveSame() throws PersistenceLayerException
+	void testRoundRobinRemoveSame() throws PersistenceLayerException
 	{
 		construct(primaryContext, "TestWP1");
 		construct(secondaryContext, "TestWP1");
@@ -149,7 +143,7 @@ public class TemplateIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinNoOriginalRemove()
+	void testRoundRobinNoOriginalRemove()
 			throws PersistenceLayerException
 	{
 		construct(primaryContext, "TestWP2");
@@ -162,7 +156,7 @@ public class TemplateIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinNoModRemove() throws PersistenceLayerException
+	void testRoundRobinNoModRemove() throws PersistenceLayerException
 	{
 		construct(primaryContext, "TestWP2");
 		construct(secondaryContext, "TestWP2");
@@ -174,7 +168,7 @@ public class TemplateIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinAddChoose() throws PersistenceLayerException
+	void testRoundRobinAddChoose() throws PersistenceLayerException
 	{
 		construct(primaryContext, "TestWP1");
 		construct(primaryContext, "TestWP2");
@@ -192,7 +186,7 @@ public class TemplateIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinChooseSame() throws PersistenceLayerException
+	void testRoundRobinChooseSame() throws PersistenceLayerException
 	{
 		construct(primaryContext, "TestWP3");
 		construct(primaryContext, "TestWP4");
@@ -206,7 +200,7 @@ public class TemplateIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinNoOriginalChoose()
+	void testRoundRobinNoOriginalChoose()
 			throws PersistenceLayerException
 	{
 		construct(primaryContext, "TestWP3");
@@ -221,7 +215,7 @@ public class TemplateIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinNoModChoose() throws PersistenceLayerException
+	void testRoundRobinNoModChoose() throws PersistenceLayerException
 	{
 		construct(primaryContext, "TestWP3");
 		construct(primaryContext, "TestWP4");
@@ -235,7 +229,7 @@ public class TemplateIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinAddchoice() throws PersistenceLayerException
+	void testRoundRobinAddchoice() throws PersistenceLayerException
 	{
 		construct(primaryContext, "TestWP1");
 		construct(primaryContext, "TestWP2");

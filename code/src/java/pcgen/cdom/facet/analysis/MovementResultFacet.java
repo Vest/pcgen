@@ -50,6 +50,8 @@ import pcgen.core.SimpleMovement;
 import pcgen.core.utils.CoreUtility;
 import pcgen.util.enumeration.Load;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 /**
  * MovementResultFacet stores the resulting movement of a Player Character. Note
  * that this does not store the Movement objects granted by CDOMObjects; rather
@@ -199,7 +201,7 @@ public class MovementResultFacet extends AbstractStorageFacet<CharID>
 					moveType = moveType.substring(5);
 				}
 
-				if (!moveType.equalsIgnoreCase("ALL"))
+				if (String.CASE_INSENSITIVE_ORDER.compare("ALL", moveType) != 0)
 				{
 					String clean = CoreUtility.capitalizeFirstLetter(moveType);
 					moveRates.putIfAbsent(MovementType.getConstant(clean), 0.0);
@@ -691,6 +693,8 @@ public class MovementResultFacet extends AbstractStorageFacet<CharID>
 		}
 	}
 
+	@SuppressFBWarnings(value = "SE_COMPARATOR_SHOULD_BE_SERIALIZABLE",
+		justification = "Private inner Comparator is never serialized; pcgen does not serialize facet runtime constructs (see spotbugs_ignore.xml SE_BAD_FIELD rule)")
 	private class MoveSorter implements Comparator<NamedValue>
 	{
 

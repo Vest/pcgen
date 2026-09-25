@@ -19,27 +19,31 @@
 package pcgen.gui3.dialog;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Optional;
 
 import pcgen.system.ConfigurationSettings;
 import pcgen.util.Logging;
 
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.Region;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.Stage;
 import org.apache.commons.lang3.SystemUtils;
 
 public class OptionsPathDialogController
 {
 	private final OptionsPathDialogModel model = new OptionsPathDialogModel();
+
+	@FXML
+	private RadioButton pcgenDir;
 
 	@FXML
 	private RadioButton freedesktop;
@@ -57,9 +61,6 @@ public class OptionsPathDialogController
 	private ToggleGroup directoryGroup;
 
 	@FXML
-	private ButtonBar ok;
-
-	@FXML
 	private RadioButton select;
 
 	@FXML
@@ -70,22 +71,26 @@ public class OptionsPathDialogController
 	{
 		model.directoryProperty().bindBidirectional(dirSelection.textProperty());
 		select.selectedProperty().addListener((
-				(observable, oldValue, newValue) -> {
+				(_, _, _) -> {
 					dirSelection.setDisable(!select.isSelected());
 					dirSelection.setEditable(select.isSelected());
 					selectButton.setDisable(!select.isSelected());
 				}));
 
-		if (!SystemUtils.IS_OS_MAC_OSX)
+		// macUserDir - macOS, freedesktop - Unix. setManaged mirrors setVisible to avoid an empty gap.
+		macUserDir.setVisible(SystemUtils.IS_OS_MAC_OSX);
+		macUserDir.setManaged(SystemUtils.IS_OS_MAC_OSX);
+		freedesktop.setVisible(SystemUtils.IS_OS_UNIX);
+		freedesktop.setManaged(SystemUtils.IS_OS_UNIX);
+
+		// "PCGen Dir" stores settings under the install dir. If the folder isn't writable (Mac, .dmg), disable the option.
+		if (!ConfigurationSettings.isInstallRootWritable())
 		{
-			macUserDir.setVisible(false);
-		}
-		if (!SystemUtils.IS_OS_UNIX)
-		{
-			freedesktop.setVisible(false);
+			pcgenDir.setDisable(true);
+			pcgenDir.setText(pcgenDir.getText() + " (not writable)");
 		}
 
-		directoryGroup.selectedToggleProperty().addListener((observable, oldValue, newValue)  -> {
+		directoryGroup.selectedToggleProperty().addListener((observable, _, newValue)  -> {
 			Logging.debugPrint("toggle changed " + observable);
 			if (newValue.getUserData() != null)
 			{
@@ -95,10 +100,32 @@ public class OptionsPathDialogController
 				model.directoryProperty().setValue(newDir);
 			}
 		});
+
+		clampWindowToRootMinSize();
+	}
+
+	/**
+	 * Applies the FXML root's min size to the Stage, since JavaFX enforces a node's minWidth/minHeight in layout only, not on the window.
+	 */
+	private void clampWindowToRootMinSize()
+	{
+		Region root = (Region) optionsPathDialogScene.getRoot();
+		optionsPathDialogScene.windowProperty().addListener((_, _, window) -> {
+			if (window instanceof Stage stage)
+			{
+				// Measure the decoration allowance in onShown, once the window and scene extents are final (both are NaN beforehand).
+				stage.setOnShown(_ -> {
+					double horizontalDecoration = stage.getWidth() - optionsPathDialogScene.getWidth();
+					double verticalDecoration = stage.getHeight() - optionsPathDialogScene.getHeight();
+					stage.setMinWidth(root.getMinWidth() + horizontalDecoration);
+					stage.setMinHeight(root.getMinHeight() + verticalDecoration);
+				});
+			}
+		});
 	}
 
 	@FXML
-	private void onConfirm(final ActionEvent actionEvent)
+	private void onConfirm()
 	{
 		ConfigurationSettings.setSystemProperty(
 				ConfigurationSettings.SETTINGS_FILES_PATH,
@@ -108,34 +135,39 @@ public class OptionsPathDialogController
 	}
 
 	@FXML
-	private void doChooser(final ActionEvent actionEvent)
+	private void doChooser()
 	{
 		DirectoryChooser directoryChooser = new DirectoryChooser();
 		String modelDirectory = model.directoryProperty().getValue();
-		if (!modelDirectory.isBlank())
+		if ((modelDirectory != null) && !modelDirectory.isBlank())
 		{
-			directoryChooser.setInitialDirectory(new File(model.directoryProperty().getValue()));
+			// The prefilled path (e.g. <install>/settings) may not exist yet, and JavaFX's DirectoryChooser silently
+			// refuses to open when initialDirectory is missing.
+			ConfigurationSettings.nearestExistingDir(modelDirectory)
+					.map(Path::toFile)
+					.ifPresent(directoryChooser::setInitialDirectory);
 		}
 
 		File dir = directoryChooser.showDialog(optionsPathDialogScene.getWindow());
 
-		if (dir != null)
+		if (dir == null)
 		{
-			if (dir.listFiles().length > 0)
-			{
-				Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-				alert.setTitle("Directory Not Empty");
-				alert.setContentText("The folder " + dir.getAbsolutePath() + " is not empty.\n"
-						+ "All ini files in this directory may be overwritten. " + "Are you sure?");
-				Optional<ButtonType> buttonType = alert.showAndWait();
-				buttonType.ifPresent(option -> {
-					if (option != ButtonType.YES)
-					{
-						return;
-					}
-				});
-			}
-			model.directoryProperty().setValue(dir.getAbsolutePath());
+			return;
 		}
+
+		File[] contents = dir.listFiles();
+		if (contents != null && contents.length > 0)
+		{
+			Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+			alert.setTitle("Directory Not Empty");
+			alert.setContentText("The folder " + dir.getAbsolutePath() + " is not empty.\n"
+					+ "All ini files in this directory may be overwritten. " + "Are you sure?");
+			Optional<ButtonType> buttonType = alert.showAndWait();
+			if (buttonType.filter(type -> type == ButtonType.OK).isEmpty())
+			{
+				return;
+			}
+		}
+		model.directoryProperty().setValue(dir.getAbsolutePath());
 	}
 }

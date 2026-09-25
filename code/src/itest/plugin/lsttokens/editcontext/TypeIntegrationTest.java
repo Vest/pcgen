@@ -29,7 +29,7 @@ import plugin.lsttokens.testsupport.CDOMTokenLoader;
 
 import org.junit.jupiter.api.Test;
 
-public class TypeIntegrationTest extends
+class TypeIntegrationTest extends
 		AbstractTypeSafeListIntegrationTestCase<CDOMObject>
 {
 
@@ -60,12 +60,6 @@ public class TypeIntegrationTest extends
 		return '.';
 	}
 
-	@Test
-	public void dummyTest()
-	{
-		// Just to get Eclipse to recognize this as a JUnit 4.0 Test Case
-	}
-
 	@Override
 	public boolean isClearDotLegal()
 	{
@@ -91,7 +85,7 @@ public class TypeIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinRemove() throws PersistenceLayerException
+	void testRoundRobinRemove() throws PersistenceLayerException
 	{
 		if (requiresPreconstruction())
 		{
@@ -105,7 +99,7 @@ public class TypeIntegrationTest extends
 	}
 
 	@Test
-	public void testRoundRobinAddRemove() throws PersistenceLayerException
+	void testRoundRobinAddRemove() throws PersistenceLayerException
 	{
 		if (requiresPreconstruction())
 		{
@@ -120,7 +114,7 @@ public class TypeIntegrationTest extends
 
 
 	@Test
-	public void testRoundRobinInsert() throws PersistenceLayerException
+	void testRoundRobinInsert() throws PersistenceLayerException
 	{
 		if (requiresPreconstruction())
 		{

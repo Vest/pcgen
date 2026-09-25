@@ -32,6 +32,8 @@ import pcgen.cdom.facet.event.DataFacetChangeListener;
 import pcgen.rules.context.LoadContext;
 import pcgen.rules.context.VariableContext;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 /**
  * VariableUtilities are a class for monitoring events on variables.
  */
@@ -73,8 +75,28 @@ public final class VariableUtilities
 	{
 		ScopeInstance globalInstance = SCOPE_FACET.getGlobalScope(id);
 		VariableContext varContext =
-				LOAD_CONTEXT_FACET.get(id.getDatasetID()).get().getVariableContext();
+				LOAD_CONTEXT_FACET.getLoadContext(id.getDatasetID()).getVariableContext();
         return (VariableID<T>) varContext.getVariableID(globalInstance, variableName);
+	}
+
+	/**
+	 * Returns true if the given variable name is a legal global variable for the dataset
+	 * of the PlayerCharacter represented by the given CharID. A global variable may be
+	 * absent when the code control feature that would define it is disabled for the game
+	 * mode (e.g. Alignment or Deity in d20 Modern).
+	 *
+	 * @param id
+	 *            The CharID representing the PlayerCharacter that the variable is on
+	 * @param variableName
+	 *            The name of the variable to be checked
+	 * @return true if the variable is a legal global variable; false otherwise
+	 */
+	public static boolean isLegalGlobalVariable(CharID id, String variableName)
+	{
+		ScopeInstance globalInstance = SCOPE_FACET.getGlobalScope(id);
+		VariableContext varContext =
+				LOAD_CONTEXT_FACET.getLoadContext(id.getDatasetID()).getVariableContext();
+		return varContext.isLegalVariableID(globalInstance.getImplementedScope(), variableName);
 	}
 
 	/**
@@ -158,7 +180,7 @@ public final class VariableUtilities
 	public static <T> VariableID<T> getLocalVariableID(CharID id,
 		ScopeInstance scopeInst, String name)
 	{
-		LoadContext loadContext = LOAD_CONTEXT_FACET.get(id.getDatasetID()).get();
+		LoadContext loadContext = LOAD_CONTEXT_FACET.getLoadContext(id.getDatasetID());
 		return (VariableID<T>) loadContext.getVariableContext().getVariableID(scopeInst, name);
 	}
 
@@ -175,6 +197,8 @@ public final class VariableUtilities
 	 *            The name of the variable for which the VariableID should be returned
 	 * @return The VariableID for the variable with the given name on the given object
 	 */
+	@SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST",
+		justification = "VarScoped instances in pcgen are always PCGenScoped (PCGenScoped extends VarScoped)")
 	public static <T> VariableID<T> getLocalVariableID(CharID id, VarScoped owner,
 		String name)
 	{
